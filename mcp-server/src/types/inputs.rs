@@ -763,3 +763,174 @@ pub struct WriteRichTextInput {
     pub cell: String,
     pub runs: Vec<RichTextRunInput>,
 }
+
+// ── Batch 5–8: Remaining 22 tools ──────────────────────────────────
+
+/// Input for setting column/row format
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetColumnFormatInput {
+    pub workbook_id: String, pub sheet_name: String,
+    pub column: String,
+    #[serde(default)] pub bold: Option<bool>, #[serde(default)] pub italic: Option<bool>,
+    #[serde(default)] pub font_size: Option<f64>, #[serde(default)] pub font_color: Option<String>,
+    #[serde(default)] pub background_color: Option<String>, #[serde(default)] pub number_format: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetRowFormatInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// 1-based row number
+    pub row: u32,
+    #[serde(default)] pub bold: Option<bool>, #[serde(default)] pub italic: Option<bool>,
+    #[serde(default)] pub font_size: Option<f64>, #[serde(default)] pub font_color: Option<String>,
+    #[serde(default)] pub background_color: Option<String>, #[serde(default)] pub number_format: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetColumnHiddenInput {
+    pub workbook_id: String, pub sheet_name: String, pub column: String, #[serde(default)] pub hidden: bool,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetRowHiddenInput {
+    pub workbook_id: String, pub sheet_name: String, pub row: u32, #[serde(default)] pub hidden: bool,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetColumnRangeWidthInput {
+    pub workbook_id: String, pub sheet_name: String,
+    pub first_column: String, pub last_column: String, pub width: f64,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetDefaultRowHeightInput {
+    pub workbook_id: String, pub sheet_name: String, pub height: f64,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetSelectionInput {
+    pub workbook_id: String, pub sheet_name: String, pub cell: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetAutofilterInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// Range in A1:B2 notation
+    pub range: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct FilterColumnInput {
+    pub workbook_id: String, pub sheet_name: String,
+    pub column: String, pub values: Vec<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct IgnoreErrorInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// Error type: "number_stored_as_text", "formula_range", etc.
+    pub error_type: String,
+    /// Range in A1:B2 notation
+    pub range: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetPageBreaksInput {
+    pub workbook_id: String, pub sheet_name: String,
+    #[serde(default)] pub row_breaks: Vec<u32>,
+    #[serde(default)] pub col_breaks: Vec<u16>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct UnprotectRangeInput {
+    pub workbook_id: String, pub sheet_name: String,
+    pub range: String, pub title: String,
+    #[serde(default)] pub password: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WriteFormulaInput {
+    pub workbook_id: String, pub sheet_name: String, pub cell: String,
+    pub formula: String,
+    /// Optional cached numeric result
+    #[serde(default)] pub cached_result: Option<f64>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WriteArrayFormulaInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// Range the array formula spans (e.g. "A1:C3")
+    pub range: String,
+    pub formula: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WriteDynamicFormulaInput {
+    pub workbook_id: String, pub sheet_name: String, pub cell: String,
+    pub formula: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WriteBlankInput {
+    pub workbook_id: String, pub sheet_name: String, pub cell: String,
+    #[serde(default)] pub bold: Option<bool>, #[serde(default)] pub background_color: Option<String>,
+    #[serde(default)] pub number_format: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ClearCellInput {
+    pub workbook_id: String, pub sheet_name: String, pub cell: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetCalcModeInput {
+    pub workbook_id: String,
+    /// "auto", "manual", or "auto_no_table"
+    pub mode: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetPropertiesInput {
+    pub workbook_id: String,
+    #[serde(default)] pub title: Option<String>,
+    #[serde(default)] pub author: Option<String>,
+    #[serde(default)] pub subject: Option<String>,
+    #[serde(default)] pub company: Option<String>,
+    #[serde(default)] pub description: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct MoveWorksheetInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// 0-based target position
+    pub to_index: usize,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WriteInternalLinkInput {
+    pub workbook_id: String, pub sheet_name: String, pub cell: String,
+    /// Internal location (e.g. "Sheet2!A1")
+    pub location: String,
+    pub display_text: String,
+}

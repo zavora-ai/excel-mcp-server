@@ -444,6 +444,150 @@ impl ExcelMcpServer {
         let mut store = self.store.write().await;
         match tools::expanded::write_rich_text(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
     }
+
+    // ── Column/row format & visibility ──────────────────────────
+
+    #[tool(description = "Apply formatting to an entire column")]
+    async fn set_column_format(&self, Parameters(input): Parameters<SetColumnFormatInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_column_format(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Apply formatting to an entire row")]
+    async fn set_row_format(&self, Parameters(input): Parameters<SetRowFormatInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_row_format(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Hide or unhide a column")]
+    async fn set_column_hidden(&self, Parameters(input): Parameters<SetColumnHiddenInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_column_hidden(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Hide or unhide a row")]
+    async fn set_row_hidden(&self, Parameters(input): Parameters<SetRowHiddenInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_row_hidden(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Set width for a range of columns at once")]
+    async fn set_column_range_width(&self, Parameters(input): Parameters<SetColumnRangeWidthInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_column_range_width(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Set the default row height for all rows")]
+    async fn set_default_row_height(&self, Parameters(input): Parameters<SetDefaultRowHeightInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_default_row_height(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── View settings ───────────────────────────────────────────
+
+    #[tool(description = "Set the selected/active cell in a sheet")]
+    async fn set_selection(&self, Parameters(input): Parameters<SetSelectionInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_selection(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Autofilter ──────────────────────────────────────────────
+
+    #[tool(description = "Enable autofilter dropdown on a range")]
+    async fn set_autofilter(&self, Parameters(input): Parameters<SetAutofilterInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_autofilter(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Set filter criteria on a specific column")]
+    async fn filter_column(&self, Parameters(input): Parameters<FilterColumnInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::filter_column(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Error suppression ───────────────────────────────────────
+
+    #[tool(description = "Suppress Excel error indicators (green triangles) on a range")]
+    async fn ignore_error(&self, Parameters(input): Parameters<IgnoreErrorInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::ignore_error(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Page breaks ─────────────────────────────────────────────
+
+    #[tool(description = "Set manual page breaks for printing")]
+    async fn set_page_breaks(&self, Parameters(input): Parameters<SetPageBreaksInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_page_breaks(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Unprotect range ─────────────────────────────────────────
+
+    #[tool(description = "Allow editing a specific range on a protected sheet")]
+    async fn unprotect_range(&self, Parameters(input): Parameters<UnprotectRangeInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::unprotect_range(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Formula tools ───────────────────────────────────────────
+
+    #[tool(description = "Write a formula to a cell with optional cached result")]
+    async fn write_formula(&self, Parameters(input): Parameters<WriteFormulaInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::write_formula(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Write a CSE array formula spanning a range (Ctrl+Shift+Enter)")]
+    async fn write_array_formula(&self, Parameters(input): Parameters<WriteArrayFormulaInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::write_array_formula(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Write a dynamic array formula (Excel 365 spill formula)")]
+    async fn write_dynamic_formula(&self, Parameters(input): Parameters<WriteDynamicFormulaInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::write_dynamic_formula(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Cell operations ─────────────────────────────────────────
+
+    #[tool(description = "Write a blank cell with formatting (background color, number format)")]
+    async fn write_blank(&self, Parameters(input): Parameters<WriteBlankInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::write_blank(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Clear a cell's content and formatting")]
+    async fn clear_cell(&self, Parameters(input): Parameters<ClearCellInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::clear_cell(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Workbook settings ───────────────────────────────────────
+
+    #[tool(description = "Set calculation mode: auto, manual, or auto_no_table")]
+    async fn set_calc_mode(&self, Parameters(input): Parameters<SetCalcModeInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_calc_mode(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Set document properties: title, author, subject, company, description")]
+    async fn set_properties(&self, Parameters(input): Parameters<SetPropertiesInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_properties(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Move a worksheet to a different position in the workbook")]
+    async fn move_worksheet(&self, Parameters(input): Parameters<MoveWorksheetInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::move_worksheet(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Write an internal link to another sheet/cell within the workbook")]
+    async fn write_internal_link(&self, Parameters(input): Parameters<WriteInternalLinkInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::write_internal_link(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
 }
 
 #[tool_handler]

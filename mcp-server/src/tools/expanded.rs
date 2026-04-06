@@ -277,3 +277,198 @@ pub fn write_rich_text(store: &mut WorkbookStore, input: WriteRichTextInput) -> 
     entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.write_rich_text(row, col, &rt).map_err(|e| anyhow::anyhow!("{e}"))?;
     Ok(success_no_data(&format!("Rich text written to {}", input.cell)))
 }
+
+// ══════════════════════════════════════════════════════════════════
+// Batch 5–8: Remaining 22 tools
+// ══════════════════════════════════════════════════════════════════
+
+fn build_format(bold: Option<bool>, italic: Option<bool>, font_size: Option<f64>, font_color: Option<&str>, bg: Option<&str>, nf: Option<&str>) -> zavora_xlsx::Format {
+    let mut f = zavora_xlsx::Format::new();
+    if bold == Some(true) { f = f.bold(); }
+    if italic == Some(true) { f = f.italic(); }
+    if let Some(s) = font_size { f = f.font_size(s); }
+    if let Some(c) = font_color { f = f.font_color(c); }
+    if let Some(c) = bg { f = f.background_color(c); }
+    if let Some(n) = nf { f = f.num_format(n); }
+    f
+}
+
+pub fn set_column_format(store: &mut WorkbookStore, input: SetColumnFormatInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let col = zavora_xlsx::utility::col_from_letter(&input.column).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let fmt = build_format(input.bold, input.italic, input.font_size, input.font_color.as_deref(), input.background_color.as_deref(), input.number_format.as_deref());
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.set_column_format(col, &fmt);
+    Ok(success_no_data(&format!("Column {} format set", input.column)))
+}
+
+pub fn set_row_format(store: &mut WorkbookStore, input: SetRowFormatInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let fmt = build_format(input.bold, input.italic, input.font_size, input.font_color.as_deref(), input.background_color.as_deref(), input.number_format.as_deref());
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.set_row_format(input.row.saturating_sub(1), &fmt);
+    Ok(success_no_data(&format!("Row {} format set", input.row)))
+}
+
+pub fn set_column_hidden(store: &mut WorkbookStore, input: SetColumnHiddenInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let col = zavora_xlsx::utility::col_from_letter(&input.column).map_err(|e| anyhow::anyhow!("{e}"))?;
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.set_column_hidden(col, input.hidden);
+    Ok(success_no_data(&format!("Column {} hidden={}", input.column, input.hidden)))
+}
+
+pub fn set_row_hidden(store: &mut WorkbookStore, input: SetRowHiddenInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.set_row_hidden(input.row.saturating_sub(1), input.hidden);
+    Ok(success_no_data(&format!("Row {} hidden={}", input.row, input.hidden)))
+}
+
+pub fn set_column_range_width(store: &mut WorkbookStore, input: SetColumnRangeWidthInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let c1 = zavora_xlsx::utility::col_from_letter(&input.first_column).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let c2 = zavora_xlsx::utility::col_from_letter(&input.last_column).map_err(|e| anyhow::anyhow!("{e}"))?;
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.set_column_range_width(c1, c2, input.width);
+    Ok(success_no_data(&format!("Columns {}:{} width set to {}", input.first_column, input.last_column, input.width)))
+}
+
+pub fn set_default_row_height(store: &mut WorkbookStore, input: SetDefaultRowHeightInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.set_default_row_height(input.height);
+    Ok(success_no_data(&format!("Default row height set to {}", input.height)))
+}
+
+pub fn set_selection(store: &mut WorkbookStore, input: SetSelectionInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let (row, col) = zavora_xlsx::utility::parse_cell_ref(&input.cell).map_err(|e| anyhow::anyhow!("{e}"))?;
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.set_selection(row, col);
+    Ok(success_no_data(&format!("Selection set to {}", input.cell)))
+}
+
+pub fn set_autofilter(store: &mut WorkbookStore, input: SetAutofilterInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let (r1, c1, r2, c2) = zavora_xlsx::utility::parse_range_ref(&input.range).map_err(|e| anyhow::anyhow!("{e}"))?;
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.set_autofilter(r1, c1, r2, c2);
+    Ok(success_no_data(&format!("Autofilter set on {}", input.range)))
+}
+
+pub fn filter_column(store: &mut WorkbookStore, input: FilterColumnInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let col = zavora_xlsx::utility::col_from_letter(&input.column).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let strs: Vec<&str> = input.values.iter().map(|s| s.as_str()).collect();
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.filter_column(col, &strs);
+    Ok(success_no_data(&format!("Filter applied to column {}", input.column)))
+}
+
+pub fn ignore_error(store: &mut WorkbookStore, input: IgnoreErrorInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.ignore_error(&input.error_type, &input.range);
+    Ok(success_no_data("Error ignored"))
+}
+
+pub fn set_page_breaks(store: &mut WorkbookStore, input: SetPageBreaksInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.set_page_breaks(&input.row_breaks, &input.col_breaks);
+    Ok(success_no_data("Page breaks set"))
+}
+
+pub fn unprotect_range(store: &mut WorkbookStore, input: UnprotectRangeInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let ws = entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?;
+    if let Some(ref pw) = input.password { ws.unprotect_range_with_password(&input.range, &input.title, pw); }
+    else { ws.unprotect_range(&input.range, &input.title); }
+    Ok(success_no_data(&format!("Range {} unprotected", input.range)))
+}
+
+pub fn write_formula(store: &mut WorkbookStore, input: WriteFormulaInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let (row, col) = zavora_xlsx::utility::parse_cell_ref(&input.cell).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let ws = entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?;
+    if let Some(result) = input.cached_result {
+        ws.write_formula_with_result(row, col, &input.formula, result).map_err(|e| anyhow::anyhow!("{e}"))?;
+    } else {
+        ws.write_formula(row, col, &input.formula).map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+    Ok(success_no_data(&format!("Formula written to {}", input.cell)))
+}
+
+pub fn write_array_formula(store: &mut WorkbookStore, input: WriteArrayFormulaInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let (r1, c1, r2, c2) = zavora_xlsx::utility::parse_range_ref(&input.range).map_err(|e| anyhow::anyhow!("{e}"))?;
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.write_array_formula(r1, c1, r2, c2, &input.formula).map_err(|e| anyhow::anyhow!("{e}"))?;
+    Ok(success_no_data(&format!("Array formula written to {}", input.range)))
+}
+
+pub fn write_dynamic_formula(store: &mut WorkbookStore, input: WriteDynamicFormulaInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let (row, col) = zavora_xlsx::utility::parse_cell_ref(&input.cell).map_err(|e| anyhow::anyhow!("{e}"))?;
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.write_dynamic_formula(row, col, &input.formula).map_err(|e| anyhow::anyhow!("{e}"))?;
+    Ok(success_no_data(&format!("Dynamic formula written to {}", input.cell)))
+}
+
+pub fn write_blank(store: &mut WorkbookStore, input: WriteBlankInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let (row, col) = zavora_xlsx::utility::parse_cell_ref(&input.cell).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let fmt = build_format(input.bold, None, None, None, input.background_color.as_deref(), input.number_format.as_deref());
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.write_blank(row, col, &fmt).map_err(|e| anyhow::anyhow!("{e}"))?;
+    Ok(success_no_data(&format!("Blank cell written at {}", input.cell)))
+}
+
+pub fn clear_cell(store: &mut WorkbookStore, input: ClearCellInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let (row, col) = zavora_xlsx::utility::parse_cell_ref(&input.cell).map_err(|e| anyhow::anyhow!("{e}"))?;
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.clear_cell(row, col);
+    Ok(success_no_data(&format!("Cell {} cleared", input.cell)))
+}
+
+pub fn set_calc_mode(store: &mut WorkbookStore, input: SetCalcModeInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let mode = match input.mode.as_str() {
+        "manual" => zavora_xlsx::CalcMode::Manual,
+        "auto_no_table" => zavora_xlsx::CalcMode::AutoNoTable,
+        _ => zavora_xlsx::CalcMode::Auto,
+    };
+    entry.data.set_calc_mode(mode);
+    Ok(success_no_data(&format!("Calc mode set to {}", input.mode)))
+}
+
+pub fn set_properties(store: &mut WorkbookStore, input: SetPropertiesInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let mut props = entry.data.properties().clone();
+    if let Some(ref t) = input.title { props.title = Some(t.clone()); }
+    if let Some(ref a) = input.author { props.author = Some(a.clone()); }
+    if let Some(ref s) = input.subject { props.subject = Some(s.clone()); }
+    if let Some(ref c) = input.company { props.company = Some(c.clone()); }
+    if let Some(ref d) = input.description { props.description = Some(d.clone()); }
+    entry.data.set_properties(props);
+    Ok(success_no_data("Document properties set"))
+}
+
+pub fn move_worksheet(store: &mut WorkbookStore, input: MoveWorksheetInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    entry.data.move_worksheet(idx, input.to_index).map_err(|e| anyhow::anyhow!("{e}"))?;
+    Ok(success_no_data(&format!("Sheet '{}' moved to position {}", input.sheet_name, input.to_index)))
+}
+
+pub fn write_internal_link(store: &mut WorkbookStore, input: WriteInternalLinkInput) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) { Some(e) => e, None => return Ok(workbook_not_found(store, &input.workbook_id)) };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) { Some(i) => i, None => return Ok(sheet_err(&input.sheet_name)) };
+    let (row, col) = zavora_xlsx::utility::parse_cell_ref(&input.cell).map_err(|e| anyhow::anyhow!("{e}"))?;
+    entry.data.worksheet(idx).map_err(|e| anyhow::anyhow!("{e}"))?.write_internal_link(row, col, &input.location, &input.display_text).map_err(|e| anyhow::anyhow!("{e}"))?;
+    Ok(success_no_data(&format!("Internal link written at {}", input.cell)))
+}
