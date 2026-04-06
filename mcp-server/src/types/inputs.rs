@@ -459,3 +459,307 @@ pub struct DescribeWorkbookInput {
     /// The workbook handle
     pub workbook_id: String,
 }
+
+// ── New tools: Batch 1–4 ───────────────────────────────────────────
+
+/// Margins for page setup (inches)
+#[derive(Deserialize, JsonSchema)]
+pub struct PageMargins {
+    #[serde(default)] pub top: Option<f64>,
+    #[serde(default)] pub bottom: Option<f64>,
+    #[serde(default)] pub left: Option<f64>,
+    #[serde(default)] pub right: Option<f64>,
+}
+
+/// Fit-to-page settings
+#[derive(Deserialize, JsonSchema)]
+pub struct FitToPages {
+    pub width: u16,
+    pub height: u16,
+}
+
+/// Repeat rows for printing
+#[derive(Deserialize, JsonSchema)]
+pub struct RepeatRows {
+    /// First row (0-based)
+    pub first: u32,
+    /// Last row (0-based)
+    pub last: u32,
+}
+
+/// Input for configuring page setup, headers, footers, print options
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetPageSetupInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    #[serde(default)] pub landscape: Option<bool>,
+    #[serde(default)] pub paper_size: Option<u8>,
+    #[serde(default)] pub margins: Option<PageMargins>,
+    #[serde(default)] pub fit_to_pages: Option<FitToPages>,
+    #[serde(default)] pub print_scale: Option<u16>,
+    /// Print area in A1:B2 notation
+    #[serde(default)] pub print_area: Option<String>,
+    #[serde(default)] pub repeat_rows: Option<RepeatRows>,
+    /// Excel header string (supports &L, &C, &R, &P, &N, &D codes)
+    #[serde(default)] pub header: Option<String>,
+    /// Excel footer string
+    #[serde(default)] pub footer: Option<String>,
+    #[serde(default)] pub print_gridlines: Option<bool>,
+    #[serde(default)] pub center_horizontally: Option<bool>,
+    #[serde(default)] pub center_vertically: Option<bool>,
+}
+
+/// Input for adding a comment/note to a cell
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddCommentInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub cell: String,
+    pub text: String,
+    #[serde(default)] pub author: Option<String>,
+}
+
+/// Input for adding a hyperlink to a cell
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddHyperlinkInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub cell: String,
+    pub url: String,
+    #[serde(default)] pub tooltip: Option<String>,
+    /// Display text (if different from URL)
+    #[serde(default)] pub display_text: Option<String>,
+}
+
+/// Input for adding a defined name (named range)
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddDefinedNameInput {
+    pub workbook_id: String,
+    pub name: String,
+    /// Formula or range reference, e.g. "Sheet1!$A$1:$B$10"
+    pub formula: String,
+}
+
+/// Input for listing defined names
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ListDefinedNamesInput {
+    pub workbook_id: String,
+}
+
+/// Input for sheet display settings
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetSheetSettingsInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    #[serde(default)] pub hidden: Option<bool>,
+    #[serde(default)] pub very_hidden: Option<bool>,
+    #[serde(default)] pub zoom: Option<u16>,
+    #[serde(default)] pub hide_gridlines: Option<bool>,
+    #[serde(default)] pub hide_headings: Option<bool>,
+    #[serde(default)] pub tab_color: Option<String>,
+    #[serde(default)] pub right_to_left: Option<bool>,
+}
+
+/// Input for setting the active (visible) sheet
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetActiveSheetInput {
+    pub workbook_id: String,
+    /// 0-based sheet index
+    pub sheet_index: usize,
+}
+
+/// Input for inserting/deleting rows
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct InsertDeleteRowsInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// 1-based row number where insertion/deletion starts
+    pub at_row: u32,
+    /// Number of rows to insert or delete
+    pub count: u32,
+}
+
+/// Input for inserting/deleting columns
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct InsertDeleteColumnsInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Column letter where insertion/deletion starts (e.g. "C")
+    pub at_column: String,
+    pub count: u16,
+}
+
+/// Input for grouping rows or columns (outline)
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct GroupRowsInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// First row (1-based)
+    pub start: u32,
+    /// Last row (1-based)
+    pub end: u32,
+    /// Outline level (1-7). Default: 1
+    #[serde(default = "default_level")]
+    pub level: u8,
+}
+
+/// Input for grouping columns
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct GroupColumnsInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// First column letter
+    pub start: String,
+    /// Last column letter
+    pub end: String,
+    #[serde(default = "default_level")]
+    pub level: u8,
+}
+
+fn default_level() -> u8 { 1 }
+
+/// Input for protecting a sheet
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ProtectSheetInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    #[serde(default)] pub password: Option<String>,
+}
+
+/// Input for protecting a workbook
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ProtectWorkbookInput {
+    pub workbook_id: String,
+    #[serde(default)] pub password: Option<String>,
+}
+
+/// Input for autofitting column widths
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AutofitColumnsInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+}
+
+/// A single chart series definition
+#[derive(Deserialize, JsonSchema)]
+pub struct ChartSeriesInput {
+    /// Data range for values (e.g. "Sheet1!$B$2:$B$10")
+    pub values: String,
+    /// Data range for categories/labels
+    #[serde(default)] pub categories: Option<String>,
+    /// Series name
+    #[serde(default)] pub name: Option<String>,
+    /// Hex color for the series
+    #[serde(default)] pub color: Option<String>,
+    /// Show data labels on this series
+    #[serde(default)] pub data_labels: Option<bool>,
+    /// Trendline type: linear, exponential, polynomial, power, logarithmic, moving_average
+    #[serde(default)] pub trendline: Option<String>,
+    /// Marker type: circle, diamond, square, triangle, none
+    #[serde(default)] pub marker: Option<String>,
+    /// Use secondary Y axis
+    #[serde(default)] pub secondary_axis: Option<bool>,
+}
+
+/// Pivot chart source
+#[derive(Deserialize, JsonSchema)]
+pub struct PivotChartSourceInput {
+    pub pivot_table: String,
+    pub sheet: String,
+}
+
+/// Enhanced chart input with full series control
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddChartEnhancedInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub chart_type: ChartType,
+    /// Individual series definitions (preferred over data_range)
+    #[serde(default)] pub series: Vec<ChartSeriesInput>,
+    /// Simple data range (used if series is empty)
+    #[serde(default)] pub data_range: Option<String>,
+    /// Cell where chart top-left is placed (e.g. "E2"). Default: "A1"
+    #[serde(default)] pub cell: Option<String>,
+    #[serde(default)] pub title: Option<String>,
+    #[serde(default)] pub x_axis_label: Option<String>,
+    #[serde(default)] pub y_axis_label: Option<String>,
+    #[serde(default)] pub legend_position: Option<LegendPosition>,
+    #[serde(default = "default_chart_width")] pub width: u32,
+    #[serde(default = "default_chart_height")] pub height: u32,
+    /// Link chart to a pivot table
+    #[serde(default)] pub pivot_source: Option<PivotChartSourceInput>,
+}
+
+/// Pivot table value field
+#[derive(Deserialize, JsonSchema)]
+pub struct PivotValueFieldInput {
+    pub field: String,
+    /// Aggregation: sum, count, average, max, min, product, count_nums, std_dev, var
+    #[serde(default = "default_sum")]
+    pub aggregation: String,
+}
+
+fn default_sum() -> String { "sum".to_string() }
+
+/// Input for creating a pivot table
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddPivotTableInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Cell where pivot table starts (e.g. "A1")
+    #[serde(default)] pub cell: Option<String>,
+    pub name: String,
+    /// Source range including sheet (e.g. "'Data'!$A$1:$E$100")
+    pub source_range: String,
+    #[serde(default)] pub row_fields: Vec<String>,
+    #[serde(default)] pub column_fields: Vec<String>,
+    pub value_fields: Vec<PivotValueFieldInput>,
+    #[serde(default)] pub filter_fields: Vec<String>,
+    #[serde(default)] pub style: Option<String>,
+    /// Layout: compact, outline, tabular. Default: compact
+    #[serde(default)] pub layout: Option<String>,
+}
+
+/// Input for reading comments from a sheet
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ReadCommentsInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+}
+
+/// A rich text run
+#[derive(Deserialize, JsonSchema)]
+pub struct RichTextRunInput {
+    pub text: String,
+    #[serde(default)] pub bold: Option<bool>,
+    #[serde(default)] pub italic: Option<bool>,
+    #[serde(default)] pub color: Option<String>,
+    #[serde(default)] pub font_size: Option<f64>,
+}
+
+/// Input for writing rich text to a cell
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WriteRichTextInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub cell: String,
+    pub runs: Vec<RichTextRunInput>,
+}

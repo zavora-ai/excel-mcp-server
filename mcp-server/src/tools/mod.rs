@@ -3,6 +3,7 @@
 pub mod charts;
 pub mod common;
 pub mod conditional;
+pub mod expanded;
 pub mod format;
 pub mod images;
 pub mod layout;

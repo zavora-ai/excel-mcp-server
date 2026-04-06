@@ -288,28 +288,161 @@ impl ExcelMcpServer {
     #[tool(description = "Set the width of a column in character units")]
     async fn set_column_width(&self, Parameters(input): Parameters<SetColumnWidthInput>) -> String {
         let mut store = self.store.write().await;
-        match tools::layout::set_column_width(&mut store, input) {
-            Ok(json) => json,
-            Err(e) => unexpected_error(e),
-        }
+        match tools::layout::set_column_width(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
     }
 
     #[tool(description = "Set the height of a row in points")]
     async fn set_row_height(&self, Parameters(input): Parameters<SetRowHeightInput>) -> String {
         let mut store = self.store.write().await;
-        match tools::layout::set_row_height(&mut store, input) {
-            Ok(json) => json,
-            Err(e) => unexpected_error(e),
-        }
+        match tools::layout::set_row_height(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
     }
 
     #[tool(description = "Freeze panes at a cell position so rows above and columns left remain visible while scrolling")]
     async fn freeze_panes(&self, Parameters(input): Parameters<FreezePanesInput>) -> String {
         let mut store = self.store.write().await;
-        match tools::layout::freeze_panes(&mut store, input) {
-            Ok(json) => json,
-            Err(e) => unexpected_error(e),
-        }
+        match tools::layout::freeze_panes(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Page setup & print ──────────────────────────────────────
+
+    #[tool(description = "Configure page setup: orientation, margins, headers/footers, print area, fit-to-page, repeat rows")]
+    async fn set_page_setup(&self, Parameters(input): Parameters<SetPageSetupInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_page_setup(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Comments & hyperlinks ───────────────────────────────────
+
+    #[tool(description = "Add a comment/note to a cell")]
+    async fn add_comment(&self, Parameters(input): Parameters<AddCommentInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::add_comment(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Read all comments from a sheet")]
+    async fn read_comments(&self, Parameters(input): Parameters<ReadCommentsInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::read_comments(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Add a clickable hyperlink to a cell")]
+    async fn add_hyperlink(&self, Parameters(input): Parameters<AddHyperlinkInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::add_hyperlink(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Named ranges ────────────────────────────────────────────
+
+    #[tool(description = "Add a defined name (named range) to the workbook")]
+    async fn add_defined_name(&self, Parameters(input): Parameters<AddDefinedNameInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::add_defined_name(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "List all defined names in a workbook")]
+    async fn list_defined_names(&self, Parameters(input): Parameters<ListDefinedNamesInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::list_defined_names(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Sheet settings ──────────────────────────────────────────
+
+    #[tool(description = "Configure sheet display: visibility, zoom, gridlines, tab color")]
+    async fn set_sheet_settings(&self, Parameters(input): Parameters<SetSheetSettingsInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_sheet_settings(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Set which sheet is active (visible) when the workbook opens")]
+    async fn set_active_sheet(&self, Parameters(input): Parameters<SetActiveSheetInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::set_active_sheet(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Row/column manipulation ─────────────────────────────────
+
+    #[tool(description = "Insert empty rows at a position, shifting existing rows down")]
+    async fn insert_rows(&self, Parameters(input): Parameters<InsertDeleteRowsInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::insert_rows(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Delete rows at a position, shifting remaining rows up")]
+    async fn delete_rows(&self, Parameters(input): Parameters<InsertDeleteRowsInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::delete_rows(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Insert empty columns at a position, shifting existing columns right")]
+    async fn insert_columns(&self, Parameters(input): Parameters<InsertDeleteColumnsInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::insert_columns(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Delete columns at a position, shifting remaining columns left")]
+    async fn delete_columns(&self, Parameters(input): Parameters<InsertDeleteColumnsInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::delete_columns(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Grouping (outline) ──────────────────────────────────────
+
+    #[tool(description = "Group rows into an expandable/collapsible outline")]
+    async fn group_rows(&self, Parameters(input): Parameters<GroupRowsInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::group_rows(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Group columns into an expandable/collapsible outline")]
+    async fn group_columns(&self, Parameters(input): Parameters<GroupColumnsInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::group_columns(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Protection ──────────────────────────────────────────────
+
+    #[tool(description = "Protect a sheet with optional password")]
+    async fn protect_sheet(&self, Parameters(input): Parameters<ProtectSheetInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::protect_sheet(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    #[tool(description = "Protect workbook structure with optional password")]
+    async fn protect_workbook(&self, Parameters(input): Parameters<ProtectWorkbookInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::protect_workbook(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Autofit ─────────────────────────────────────────────────
+
+    #[tool(description = "Auto-fit all column widths based on cell content")]
+    async fn autofit_columns(&self, Parameters(input): Parameters<AutofitColumnsInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::autofit_columns(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Enhanced charts ─────────────────────────────────────────
+
+    #[tool(description = "Add a chart with full control: multiple series, colors, data labels, trendlines, markers, pivot source")]
+    async fn add_chart_enhanced(&self, Parameters(input): Parameters<AddChartEnhancedInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::add_chart_enhanced(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Pivot tables ────────────────────────────────────────────
+
+    #[tool(description = "Create a pivot table with row/column/value/filter fields")]
+    async fn add_pivot_table(&self, Parameters(input): Parameters<AddPivotTableInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::add_pivot_table(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
+    }
+
+    // ── Rich text ───────────────────────────────────────────────
+
+    #[tool(description = "Write rich text (mixed bold/italic/color) to a cell")]
+    async fn write_rich_text(&self, Parameters(input): Parameters<WriteRichTextInput>) -> String {
+        let mut store = self.store.write().await;
+        match tools::expanded::write_rich_text(&mut store, input) { Ok(j) => j, Err(e) => unexpected_error(e) }
     }
 }
 
