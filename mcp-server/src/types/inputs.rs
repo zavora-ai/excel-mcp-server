@@ -934,3 +934,176 @@ pub struct WriteInternalLinkInput {
     pub location: String,
     pub display_text: String,
 }
+
+// ══════════════════════════════════════════════════════════════════
+// Consolidated input types (replacing multiple separate inputs)
+// ══════════════════════════════════════════════════════════════════
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ConfigureWorkbookInput {
+    pub workbook_id: String,
+    /// "auto", "manual", or "auto_no_table"
+    #[serde(default)] pub calc_mode: Option<String>,
+    /// 0-based sheet index to make active
+    #[serde(default)] pub active_sheet: Option<usize>,
+    #[serde(default)] pub title: Option<String>,
+    #[serde(default)] pub author: Option<String>,
+    #[serde(default)] pub subject: Option<String>,
+    #[serde(default)] pub company: Option<String>,
+    #[serde(default)] pub description: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ModifyRowsInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// "insert" or "delete"
+    pub action: String,
+    /// 1-based row number
+    pub at_row: u32,
+    pub count: u32,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ModifyColumnsInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// "insert" or "delete"
+    pub action: String,
+    pub at_column: String,
+    pub count: u16,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WriteFormulaConsolidatedInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// Cell for regular/dynamic, or range for array (e.g. "A1" or "A1:C3")
+    pub cell: String,
+    pub formula: String,
+    /// "regular" (default), "array", or "dynamic"
+    #[serde(default)] pub formula_type: Option<String>,
+    #[serde(default)] pub cached_result: Option<f64>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ManageCellInput {
+    pub workbook_id: String, pub sheet_name: String, pub cell: String,
+    /// "blank" or "clear"
+    pub action: String,
+    #[serde(default)] pub background_color: Option<String>,
+    #[serde(default)] pub number_format: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ManageCommentsInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// "add" or "read"
+    pub action: String,
+    #[serde(default)] pub cell: Option<String>,
+    #[serde(default)] pub text: Option<String>,
+    #[serde(default)] pub author: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ManageDefinedNamesInput {
+    pub workbook_id: String,
+    /// "add" or "list"
+    pub action: String,
+    #[serde(default)] pub name: Option<String>,
+    #[serde(default)] pub formula: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddLinkInput {
+    pub workbook_id: String, pub sheet_name: String, pub cell: String,
+    /// "url" or "internal"
+    #[serde(default = "default_url")] pub link_type: String,
+    /// URL for external, or "Sheet2!A1" for internal
+    pub target: String,
+    #[serde(default)] pub display_text: Option<String>,
+    #[serde(default)] pub tooltip: Option<String>,
+}
+
+fn default_url() -> String { "url".to_string() }
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ProtectInput {
+    pub workbook_id: String,
+    /// "sheet", "workbook", or "unprotect_range"
+    pub target: String,
+    #[serde(default)] pub sheet_name: Option<String>,
+    #[serde(default)] pub password: Option<String>,
+    /// For unprotect_range: the range to allow editing
+    #[serde(default)] pub range: Option<String>,
+    /// For unprotect_range: title for the range
+    #[serde(default)] pub range_title: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetDimensionsInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// "column_width", "row_height", "column_range_width", or "default_row_height"
+    pub target: String,
+    #[serde(default)] pub column: Option<String>,
+    #[serde(default)] pub first_column: Option<String>,
+    #[serde(default)] pub last_column: Option<String>,
+    /// 1-based row number
+    #[serde(default)] pub row: Option<u32>,
+    pub value: f64,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetVisibilityInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// "row" or "column"
+    pub target: String,
+    /// Column letter (for column) or 1-based row number as string (for row)
+    pub identifier: String,
+    pub hidden: bool,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetRowColumnFormatInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// "row" or "column"
+    pub target: String,
+    /// Column letter or 1-based row number as string
+    pub identifier: String,
+    #[serde(default)] pub bold: Option<bool>, #[serde(default)] pub italic: Option<bool>,
+    #[serde(default)] pub font_size: Option<f64>, #[serde(default)] pub font_color: Option<String>,
+    #[serde(default)] pub background_color: Option<String>, #[serde(default)] pub number_format: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct GroupInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// "rows" or "columns"
+    pub target: String,
+    /// For rows: 1-based row numbers. For columns: column letters.
+    pub start: String,
+    pub end: String,
+    #[serde(default = "default_level")] pub level: u8,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ManageAutofilterInput {
+    pub workbook_id: String, pub sheet_name: String,
+    /// Range in A1:B2 notation (sets autofilter)
+    pub range: String,
+    /// Optional: column letter to filter
+    #[serde(default)] pub filter_column: Option<String>,
+    /// Optional: filter values for the column
+    #[serde(default)] pub filter_values: Option<Vec<String>>,
+}
