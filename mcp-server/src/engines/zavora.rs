@@ -5,7 +5,6 @@
 use std::path::Path;
 use zavora_xlsx::{CellValue, Workbook};
 
-use crate::cell_ref;
 use crate::types::responses::SheetSummary;
 
 /// Create a new empty workbook.
