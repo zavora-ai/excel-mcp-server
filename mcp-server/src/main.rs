@@ -50,11 +50,12 @@ async fn run_http() -> anyhow::Result<()> {
         StreamableHttpServerConfig, StreamableHttpService,
         session::local::LocalSessionManager,
     };
+    use tower_http::cors::CorsLayer;
 
     let bind = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "127.0.0.1:8080".to_string());
     let ct = tokio_util::sync::CancellationToken::new();
 
-    let service = StreamableHttpService::new(
+    let mcp_service = StreamableHttpService::new(
         || {
             let store = Arc::new(RwLock::new(WorkbookStore::new()));
             Ok(ExcelMcpServer::new(store))
@@ -63,10 +64,32 @@ async fn run_http() -> anyhow::Result<()> {
         StreamableHttpServerConfig::default().with_cancellation_token(ct.child_token()),
     );
 
-    let router = axum::Router::new().nest_service("/mcp", service);
+    // Serve static web client from ./web-client/ if it exists
+    let web_dir = std::path::PathBuf::from(
+        std::env::var("WEB_CLIENT_DIR")
+            .unwrap_or_else(|_| "./web-client".to_string()),
+    );
+
+    let cors = CorsLayer::very_permissive();
+
+    let mut router = axum::Router::new()
+        .nest_service("/mcp", mcp_service);
+
+    if web_dir.exists() {
+        tracing::info!("Serving web client from {}", web_dir.display());
+        router = router.fallback_service(
+            tower_http::services::ServeDir::new(&web_dir)
+                .append_index_html_on_directories(true),
+        );
+    }
+
+    let router = router.layer(cors);
     let listener = tokio::net::TcpListener::bind(&bind).await?;
 
     tracing::info!("Excel MCP Server listening on http://{}/mcp", bind);
+    if web_dir.exists() {
+        tracing::info!("Web client at http://{}/", bind);
+    }
 
     axum::serve(listener, router)
         .with_graceful_shutdown(async move {
