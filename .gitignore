@@ -1,1 +1,29 @@
+# Build artifacts
 /target
+debug/
+*.d
+
+# Generated files
+*.xlsx
+*.xlsm
+*.xls
+*.ods
+~$*.xlsx
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.*
+
+# Artifacts directory (runtime generated files)
+/artifacts/
