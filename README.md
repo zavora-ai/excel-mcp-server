@@ -4,53 +4,15 @@ A high-performance [Model Context Protocol](https://modelcontextprotocol.io/) (M
 
 **43 tools** covering the complete Excel feature set — from basic cell writes to pivot tables, charts, conditional formatting, shapes, and document properties.
 
-## Features
-
-- **Create, open, edit, and save** xlsx files through natural language
-- **Read and analyze** existing spreadsheets with pagination and search
-- **Full formatting** — bold, italic, colors, borders, number formats, alignment
-- **10 chart types** — bar, column, line, pie, scatter, area, doughnut, waterfall, funnel, treemap
-- **Pivot tables** with row/column/value/filter fields and multiple aggregation modes
-- **Conditional formatting** — cell value rules, color scales, data bars, icon sets
-- **Data validation** — dropdowns, number ranges, date ranges, custom formulas
-- **Tables, sparklines, images, shapes** — full Excel feature coverage
-- **Two transports** — stdio for CLI clients, streamable HTTP for web clients
-- **In-memory workbook store** with TTL eviction and capacity limits
-
-## Quick Start
-
-### Prerequisites
-
-- [Rust](https://rustup.rs/) 1.75+
-- [zavora-xlsx](https://github.com/zavora-ai/zavora-xlsx) cloned locally (path dependency)
-
-### Build
+## Install
 
 ```bash
-cargo build --release
+cargo install excel-mcp-server
 ```
 
-The binary is at `target/release/excel-mcp-server`.
+This compiles and installs the binary to `~/.cargo/bin/excel-mcp-server`.
 
-### Run (stdio)
-
-```bash
-./target/release/excel-mcp-server
-```
-
-The server reads MCP JSON-RPC messages from stdin and writes responses to stdout. Logs go to stderr.
-
-### Run (HTTP)
-
-```bash
-./target/release/excel-mcp-server http
-```
-
-Starts a streamable HTTP server on `127.0.0.1:8080`. Configure with `BIND_ADDRESS`:
-
-```bash
-BIND_ADDRESS=0.0.0.0:3000 ./target/release/excel-mcp-server http
-```
+> Requires [Rust](https://rustup.rs/) 1.75+. If you don't have Rust, install it with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`.
 
 ## Client Configuration
 
@@ -62,7 +24,7 @@ Add to `claude_desktop_config.json`:
 {
   "mcpServers": {
     "excel": {
-      "command": "/path/to/excel-mcp-server"
+      "command": "excel-mcp-server"
     }
   }
 }
@@ -76,7 +38,7 @@ Add to `.kiro/settings/mcp.json`:
 {
   "mcpServers": {
     "excel": {
-      "command": "/path/to/excel-mcp-server",
+      "command": "excel-mcp-server",
       "autoApprove": []
     }
   }
@@ -91,15 +53,40 @@ Add to `.cursor/mcp.json`:
 {
   "mcpServers": {
     "excel": {
-      "command": "/path/to/excel-mcp-server"
+      "command": "excel-mcp-server"
     }
   }
 }
 ```
 
-### HTTP Client
+### HTTP Mode
 
-Point any MCP client at `http://localhost:8080/mcp` when running in HTTP mode.
+For web-based MCP clients, run in HTTP mode:
+
+```bash
+excel-mcp-server http
+```
+
+This starts a streamable HTTP server on `127.0.0.1:8080`. Point your client at `http://localhost:8080/mcp`.
+
+Configure the bind address with:
+
+```bash
+BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
+```
+
+## Features
+
+- **Create, open, edit, and save** xlsx files through natural language
+- **Read and analyze** existing spreadsheets with pagination and search
+- **Full formatting** — bold, italic, colors, borders, number formats, alignment
+- **10 chart types** — bar, column, line, pie, scatter, area, doughnut, waterfall, funnel, treemap
+- **Pivot tables** with row/column/value/filter fields and multiple aggregation modes
+- **Conditional formatting** — cell value rules, color scales, data bars, icon sets
+- **Data validation** — dropdowns, number ranges, date ranges, custom formulas
+- **Tables, sparklines, images, shapes** — full Excel feature coverage
+- **Two transports** — stdio for CLI clients, streamable HTTP for web clients
+- **In-memory workbook store** with TTL eviction and capacity limits
 
 ## Tools Reference
 
@@ -256,6 +243,93 @@ Point any MCP client at `http://localhost:8080/mcp` when running in HTTP mode.
 |---|---|
 | `set_doc_properties` | Set title, author, subject, description, keywords, category, company |
 
+## Example Workflow
+
+A typical AI assistant interaction:
+
+1. **Create a workbook**
+   ```
+   → create_workbook {}
+   ← { workbook_id: "abc-123", sheets: ["Sheet1"] }
+   ```
+
+2. **Write headers and data**
+   ```
+   → write_row { workbook_id: "abc-123", sheet_name: "Sheet1", start_cell: "A1", values: ["Product", "Q1", "Q2", "Q3", "Q4"] }
+   → write_row { workbook_id: "abc-123", sheet_name: "Sheet1", start_cell: "A2", values: ["Widget", 150, 200, 180, 220] }
+   ```
+
+3. **Format headers**
+   ```
+   → set_cell_format { workbook_id: "abc-123", sheet_name: "Sheet1", range: "A1:E1", bold: true, background_color: "#4472C4", font_color: "#FFFFFF" }
+   ```
+
+4. **Add a chart**
+   ```
+   → add_chart { workbook_id: "abc-123", sheet_name: "Sheet1", chart_type: "column", series: [{ values: "Sheet1!$B$2:$E$2", categories: "Sheet1!$B$1:$E$1", name: "Widget" }], title: "Quarterly Sales", cell: "A5" }
+   ```
+
+5. **Save**
+   ```
+   → save_workbook { workbook_id: "abc-123", file_path: "./quarterly_report.xlsx" }
+   ```
+
+## Workbook Store
+
+The server maintains an in-memory store of open workbooks:
+
+- **Capacity**: 10 concurrent workbooks (configurable)
+- **TTL**: 30-minute inactivity timeout — workbooks are automatically evicted
+- **Thread-safe**: Protected by `Arc<RwLock<WorkbookStore>>`
+
+Each `create_workbook` or `open_workbook` call returns a `workbook_id` handle. All subsequent operations reference this handle. Call `save_workbook` before the TTL expires to persist changes, and `close_workbook` to free memory.
+
+## Response Format
+
+All tools return structured JSON:
+
+```json
+{
+  "status": "success",
+  "message": "Descriptive message",
+  "data": { ... }
+}
+```
+
+On error:
+
+```json
+{
+  "status": "error",
+  "category": "not_found",
+  "message": "Workbook not found",
+  "suggestion": "Check the workbook_id"
+}
+```
+
+## Development
+
+To build from source:
+
+```bash
+git clone https://github.com/zavora-ai/excel-mcp-server.git
+cd excel-mcp-server
+cargo build --release
+```
+
+The binary is at `target/release/excel-mcp-server`.
+
+```bash
+# Run tests
+cargo test
+
+# Lint
+cargo clippy
+
+# Format
+cargo fmt
+```
+
 ## Architecture
 
 ```
@@ -286,86 +360,6 @@ src/
     ├── inputs.rs    # Deserialized input structs for all tools
     ├── enums.rs     # Shared enums (chart types, formats, etc.)
     └── responses.rs # Structured JSON response builders
-```
-
-### Workbook Store
-
-The server maintains an in-memory store of open workbooks:
-
-- **Capacity**: 10 concurrent workbooks (configurable)
-- **TTL**: 30-minute inactivity timeout — workbooks are automatically evicted
-- **Thread-safe**: Protected by `Arc<RwLock<WorkbookStore>>`
-
-Each `create_workbook` or `open_workbook` call returns a `workbook_id` handle. All subsequent operations reference this handle. Call `save_workbook` before the TTL expires to persist changes, and `close_workbook` to free memory.
-
-### Response Format
-
-All tools return structured JSON:
-
-```json
-{
-  "status": "success",
-  "message": "Descriptive message",
-  "data": { ... }
-}
-```
-
-On error:
-
-```json
-{
-  "status": "error",
-  "category": "not_found",
-  "message": "Workbook not found",
-  "suggestion": "Check the workbook_id"
-}
-```
-
-## Example Workflow
-
-Here's what a typical interaction looks like when an AI assistant uses this server:
-
-1. **Create a workbook**
-   ```
-   → create_workbook {}
-   ← { workbook_id: "abc-123", sheets: ["Sheet1"] }
-   ```
-
-2. **Write headers and data**
-   ```
-   → write_row { workbook_id: "abc-123", sheet_name: "Sheet1", start_cell: "A1", values: ["Product", "Q1", "Q2", "Q3", "Q4"] }
-   → write_row { workbook_id: "abc-123", sheet_name: "Sheet1", start_cell: "A2", values: ["Widget", 150, 200, 180, 220] }
-   ```
-
-3. **Format headers**
-   ```
-   → set_cell_format { workbook_id: "abc-123", sheet_name: "Sheet1", range: "A1:E1", bold: true, background_color: "#4472C4", font_color: "#FFFFFF" }
-   ```
-
-4. **Add a chart**
-   ```
-   → add_chart { workbook_id: "abc-123", sheet_name: "Sheet1", chart_type: "column", series: [{ values: "Sheet1!$B$2:$E$2", categories: "Sheet1!$B$1:$E$1", name: "Widget" }], title: "Quarterly Sales", cell: "A5" }
-   ```
-
-5. **Save**
-   ```
-   → save_workbook { workbook_id: "abc-123", file_path: "./quarterly_report.xlsx" }
-   ```
-
-## Development
-
-```bash
-# Build
-cargo build
-
-# Run tests
-cargo test
-
-# Lint
-cargo clippy
-
-# Format
-cargo fmt
 ```
 
 ## License
