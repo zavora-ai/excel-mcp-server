@@ -667,7 +667,7 @@ impl ExcelMcpServer {
 impl ServerHandler for ExcelMcpServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build()).with_instructions(
-            "Excel file manipulation server powered by zavora-xlsx. 66 tools covering: \
+            "Excel file manipulation server powered by zavora-xlsx. 74 tools covering: \
                  workbook lifecycle, sheet management, cell reading/writing, formatting, \
                  charts (11 types + pivot charts + waterfall/funnel/treemap/sunburst/histogram/box-whisker/map \
                  with data tables, 3D views, error bars, axis formatting, drop/high-low lines, gradients), \

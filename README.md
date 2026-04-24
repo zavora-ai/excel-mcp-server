@@ -2,7 +2,7 @@
 
 A high-performance [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that gives AI assistants full control over Excel spreadsheets. Built in Rust with [zavora-xlsx](https://github.com/zavora-ai/zavora-xlsx) for native xlsx read/write and [rmcp](https://github.com/modelcontextprotocol/rust-sdk) for the MCP protocol layer.
 
-**56 tools** covering the complete Excel feature set — from basic cell writes to pivot tables, charts, conditional formatting, shapes, slicers, timelines, form controls, and document properties.
+**74 tools** covering the complete Excel feature set — from basic cell writes to pivot tables, charts, conditional formatting, shapes, slicers, timelines, form controls, threaded comments, and document properties.
 
 ## Install
 
@@ -80,12 +80,17 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 - **Create, open, edit, and save** xlsx files through natural language
 - **Read and analyze** existing spreadsheets with pagination and search
 - **Full formatting** — bold, italic, colors, borders, number formats, alignment
-- **10 chart types** — bar, column, line, pie, scatter, area, doughnut, waterfall, funnel, treemap
-- **Pivot tables** with row/column/value/filter fields and multiple aggregation modes
+- **10 chart types** — bar, column, line, pie, scatter, area, doughnut, waterfall, funnel, treemap, plus sunburst, histogram, box & whisker, map (14 total)
+- **Chart enhancements** — data tables, 3D views, error bars, axis formatting, drop/high-low lines, gradients, alt text
+- **Pivot tables** with calculated fields, date/range grouping, subtotals, grand totals, value formats
 - **Conditional formatting** — cell value rules, color scales, data bars, icon sets
 - **Data validation** — dropdowns, number ranges, date ranges, custom formulas
 - **Tables, sparklines, images, shapes** — full Excel feature coverage
+- **Slicers, timelines, form controls** — interactive pivot filters and UI elements
+- **Threaded comments** — modern conversation-style comments with replies
+- **Formula recalculation** — formulas evaluated with dependency graph before save
 - **Two transports** — stdio for CLI clients, streamable HTTP for web clients
+- **Multiple save formats** — xlsx, template, encrypted, parallel compression
 - **In-memory workbook store** with TTL eviction and capacity limits
 
 ## Tools Reference
@@ -215,11 +220,12 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 |---|---|
 | `set_page_setup` | Configure landscape, paper size, margins, fit-to-page, print area, headers/footers, gridlines |
 
-### Comments & Links (2 tools)
+### Comments & Links (3 tools)
 
 | Tool | Description |
 |---|---|
 | `manage_comments` | Add or read cell comments/notes |
+| `add_threaded_comment` | Add modern threaded comments with replies and timestamps |
 | `add_link` | Add external URLs or internal sheet references |
 
 ### Named Ranges (2 tools)
@@ -236,12 +242,13 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 | `modify_rows` | Insert or delete rows |
 | `modify_columns` | Insert or delete columns |
 
-### Grouping & Protection (2 tools)
+### Grouping & Protection (3 tools)
 
 | Tool | Description |
 |---|---|
 | `group` | Group rows or columns into expandable outlines |
 | `protect` | Protect sheets, workbooks, or unprotect specific ranges |
+| `protect_sheet_advanced` | Protect with granular options (allow insert/delete/format/sort per feature) |
 
 ### Autofilter & Errors (2 tools)
 
@@ -250,18 +257,26 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 | `manage_autofilter` | Set autofilter on a range with optional column filtering |
 | `ignore_error` | Suppress Excel error indicators (green triangles) on a range |
 
-### Document Properties (1 tool)
+### Document Properties (2 tools)
 
 | Tool | Description |
 |---|---|
 | `set_doc_properties` | Set title, author, subject, description, keywords, category, company |
+| `set_custom_property` | Set custom document properties (text, number, integer, bool, datetime) |
 
 ### Advanced Save/Open (2 tools)
 
 | Tool | Description |
 |---|---|
-| `save_workbook_advanced` | Save as template (.xltx), encrypted (password-protected), or parallel (fast compression) |
+| `save_workbook_advanced` | Save as template (.xltx), encrypted (password-protected), or parallel (fast compression). Formulas recalculated before save. |
 | `open_workbook_encrypted` | Open a password-protected Excel workbook |
+
+### Read Enhancements (2 tools)
+
+| Tool | Description |
+|---|---|
+| `read_cell_comment` | Read a single cell's comment (author and text) |
+| `read_cell_format` | Read a cell's format (bold, italic, colors, number format, etc.) |
 
 ### Sheet Metadata (1 tool)
 
@@ -274,6 +289,30 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 | Tool | Description |
 |---|---|
 | `add_chart_sheet` | Add a dedicated chart-only sheet (no cells, just a full-page chart) |
+
+### Custom XML (1 tool)
+
+| Tool | Description |
+|---|---|
+| `manage_custom_xml` | Add or read custom XML parts by namespace |
+
+### External Connections (1 tool)
+
+| Tool | Description |
+|---|---|
+| `add_connection` | Add an external data connection |
+
+### Optimization (1 tool)
+
+| Tool | Description |
+|---|---|
+| `set_sst_threshold` | Set shared string table threshold for write performance tuning |
+
+### JSON Data (1 tool)
+
+| Tool | Description |
+|---|---|
+| `write_json_rows` | Write JSON objects as rows with auto-detected types and optional headers |
 
 ## Example Workflow
 
