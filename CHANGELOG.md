@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2025-07-25
+## [0.2.1] - 2025-07-25
 
 Major release: full feature parity with zavora-xlsx 0.1.1. Tool count increased from 43 to 74.
 
@@ -134,6 +134,7 @@ Initial public release.
 
 Workbook lifecycle (4), sheet management (7), reading (4), writing (4), formulas (1), cell operations (1), formatting (4), layout (5), charts — bar, column, line, pie, scatter, area, doughnut, waterfall, funnel, treemap (4), tables (1), conditional formatting (1), data validation (1), sparklines (1), images (1), shapes (1), pivot tables (1), page setup (1), comments (1), links (1), named ranges (1), row/column manipulation (2), grouping (1), protection (1), autofilter (1), error suppression (1), document properties (1).
 
+[0.2.1]: https://github.com/zavora-ai/excel-mcp-server/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/zavora-ai/excel-mcp-server/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/zavora-ai/excel-mcp-server/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/zavora-ai/excel-mcp-server/releases/tag/v0.1.0
