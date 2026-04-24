@@ -2042,3 +2042,73 @@ pub struct PivotSubtotalToggle {
     pub field: String,
     pub show: bool,
 }
+
+// ══════════════════════════════════════════════════════════════════
+// v0.2.1 continued: remaining gap items
+// ══════════════════════════════════════════════════════════════════
+
+/// Input for reading a single cell's comment
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ReadCellCommentInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub cell: String,
+}
+
+/// Input for reading a cell's format
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ReadCellFormatInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub cell: String,
+}
+
+/// Input for managing custom XML parts
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ManageCustomXmlInput {
+    pub workbook_id: String,
+    /// "add" or "read"
+    pub action: String,
+    /// XML namespace URI
+    pub namespace: String,
+    /// XML content (required for "add")
+    #[serde(default)]
+    pub content: Option<String>,
+}
+
+/// Input for adding an external data connection
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddConnectionInput {
+    pub workbook_id: String,
+    pub connection_string: String,
+    pub command: String,
+}
+
+/// Input for setting the shared string table threshold
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetSstThresholdInput {
+    pub workbook_id: String,
+    /// Number of unique strings before using shared string table
+    pub threshold: usize,
+}
+
+/// Input for writing typed JSON data rows (serde-based)
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WriteJsonRowsInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Starting cell (default "A1")
+    #[serde(default)]
+    pub start_cell: Option<String>,
+    /// Whether first row of data contains headers to write
+    #[serde(default = "default_true")]
+    pub write_headers: bool,
+    /// Array of objects — keys become headers, values become cells
+    pub rows: Vec<serde_json::Value>,
+}

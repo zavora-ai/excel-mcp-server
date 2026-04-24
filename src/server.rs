@@ -605,13 +605,69 @@ impl ExcelMcpServer {
     ) -> String {
         tool_fn!(self.store, tools::expanded::set_custom_property, i)
     }
+
+    // ── Read enhancements (2) ──
+
+    #[tool(description = "Read a single cell's comment (author and text). Returns null if no comment exists.")]
+    async fn read_cell_comment(
+        &self,
+        Parameters(i): Parameters<ReadCellCommentInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::read_cell_comment, i)
+    }
+
+    #[tool(description = "Read a cell's format (bold, italic, colors, number format, etc.)")]
+    async fn read_cell_format(
+        &self,
+        Parameters(i): Parameters<ReadCellFormatInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::read_cell_format, i)
+    }
+
+    // ── Custom XML (1) ──
+
+    #[tool(
+        description = "Manage custom XML parts: action='add' (namespace, content) or action='read' (namespace)"
+    )]
+    async fn manage_custom_xml(
+        &self,
+        Parameters(i): Parameters<ManageCustomXmlInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::manage_custom_xml, i)
+    }
+
+    // ── External connections (1) ──
+
+    #[tool(description = "Add an external data connection (connection_string, command)")]
+    async fn add_connection(&self, Parameters(i): Parameters<AddConnectionInput>) -> String {
+        tool_fn!(self.store, tools::expanded::add_connection, i)
+    }
+
+    // ── SST optimization (1) ──
+
+    #[tool(description = "Set the shared string table threshold for optimization. Lower values use more memory but faster writes.")]
+    async fn set_sst_threshold(
+        &self,
+        Parameters(i): Parameters<SetSstThresholdInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::set_sst_threshold, i)
+    }
+
+    // ── JSON rows (1) ──
+
+    #[tool(
+        description = "Write JSON objects as rows. Each object's keys become column headers (if write_headers=true), values become cells. Auto-detects types."
+    )]
+    async fn write_json_rows(&self, Parameters(i): Parameters<WriteJsonRowsInput>) -> String {
+        tool_fn!(self.store, tools::expanded::write_json_rows, i)
+    }
 }
 
 #[tool_handler]
 impl ServerHandler for ExcelMcpServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build()).with_instructions(
-            "Excel file manipulation server powered by zavora-xlsx. 59 tools covering: \
+            "Excel file manipulation server powered by zavora-xlsx. 66 tools covering: \
                  workbook lifecycle, sheet management, cell reading/writing, formatting, \
                  charts (11 types + pivot charts + waterfall/funnel/treemap/sunburst/histogram/box-whisker/map \
                  with data tables, 3D views, error bars, axis formatting, drop/high-low lines, gradients), \

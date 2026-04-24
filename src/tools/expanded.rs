@@ -2920,3 +2920,218 @@ pub fn set_custom_property(
         input.name
     )))
 }
+
+
+// ══════════════════════════════════════════════════════════════════
+// v0.2.1 continued: remaining gap items
+// ══════════════════════════════════════════════════════════════════
+
+pub fn read_cell_comment(
+    store: &mut WorkbookStore,
+    input: ReadCellCommentInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let (row, col) =
+        zavora_xlsx::utility::parse_cell_ref(&input.cell).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let ws = entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    match ws.get_comment(row, col) {
+        Some((author, text)) => Ok(success(
+            "Comment found",
+            serde_json::json!({
+                "cell": input.cell,
+                "author": author,
+                "text": text,
+            }),
+        )),
+        None => Ok(success_no_data(&format!(
+            "No comment at {}",
+            input.cell
+        ))),
+    }
+}
+
+pub fn read_cell_format(
+    store: &mut WorkbookStore,
+    input: ReadCellFormatInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let (row, col) =
+        zavora_xlsx::utility::parse_cell_ref(&input.cell).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let ws = entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    match ws.cell_format(row, col) {
+        Some(fmt) => Ok(success(
+            "Cell format read",
+            serde_json::json!({
+                "cell": input.cell,
+                "format": format!("{:?}", fmt),
+            }),
+        )),
+        None => Ok(success_no_data(&format!(
+            "No format at {}",
+            input.cell
+        ))),
+    }
+}
+
+pub fn manage_custom_xml(
+    store: &mut WorkbookStore,
+    input: ManageCustomXmlInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    match input.action.as_str() {
+        "add" => {
+            let content = input.content.as_deref().unwrap_or("");
+            entry
+                .data
+                .add_custom_xml(&input.namespace, content.as_bytes());
+            Ok(success_no_data(&format!(
+                "Custom XML added for namespace '{}'",
+                input.namespace
+            )))
+        }
+        _ => {
+            // "read"
+            match entry.data.read_custom_xml(&input.namespace) {
+                Some(bytes) => {
+                    let text = String::from_utf8_lossy(bytes).to_string();
+                    Ok(success(
+                        "Custom XML read",
+                        serde_json::json!({
+                            "namespace": input.namespace,
+                            "content": text,
+                        }),
+                    ))
+                }
+                None => Ok(success_no_data(&format!(
+                    "No custom XML for namespace '{}'",
+                    input.namespace
+                ))),
+            }
+        }
+    }
+}
+
+pub fn add_connection(
+    store: &mut WorkbookStore,
+    input: AddConnectionInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    entry
+        .data
+        .add_connection(&input.connection_string, &input.command);
+    Ok(success_no_data("External data connection added"))
+}
+
+pub fn set_sst_threshold(
+    store: &mut WorkbookStore,
+    input: SetSstThresholdInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    entry.data.set_sst_threshold(input.threshold);
+    Ok(success_no_data(&format!(
+        "SST threshold set to {}",
+        input.threshold
+    )))
+}
+
+pub fn write_json_rows(
+    store: &mut WorkbookStore,
+    input: WriteJsonRowsInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let (start_row, start_col) = if let Some(ref c) = input.start_cell {
+        zavora_xlsx::utility::parse_cell_ref(c).map_err(|e| anyhow::anyhow!("{e}"))?
+    } else {
+        (0, 0)
+    };
+    let ws = entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+
+    if input.rows.is_empty() {
+        return Ok(success_no_data("No rows to write"));
+    }
+
+    // Extract headers from first object's keys
+    let headers: Vec<String> = if let Some(obj) = input.rows[0].as_object() {
+        obj.keys().cloned().collect()
+    } else {
+        return Ok(error(
+            ErrorCategory::EngineUnsupported,
+            "Rows must be JSON objects",
+            "Each row should be {\"key\": value, ...}",
+        ));
+    };
+
+    let mut current_row = start_row;
+
+    // Write headers
+    if input.write_headers {
+        for (ci, header) in headers.iter().enumerate() {
+            ws.write(current_row, start_col + ci as u16, header.as_str())
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+        }
+        current_row += 1;
+    }
+
+    // Write data rows
+    for row_val in &input.rows {
+        if let Some(obj) = row_val.as_object() {
+            for (ci, header) in headers.iter().enumerate() {
+                if let Some(val) = obj.get(header) {
+                    crate::engines::zavora::write_json_value(
+                        ws,
+                        current_row,
+                        start_col + ci as u16,
+                        val,
+                    )
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                }
+            }
+        }
+        current_row += 1;
+    }
+
+    Ok(success_no_data(&format!(
+        "{} rows written to '{}'",
+        input.rows.len(),
+        input.sheet_name
+    )))
+}
