@@ -321,7 +321,7 @@ dependencies = [
 
 [[package]]
 name = "excel-mcp-server"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -1803,9 +1803,9 @@ dependencies = [
 
 [[package]]
 name = "zavora-xlsx"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c60c27a0d6265f0f8d5da673b09c26429edf292be3c45324af4b9521ab603211"
+checksum = "e71353f23fd0cc78df4fdfb53b71cfe5c99b2122d64ea47cce582ff50e50facc"
 dependencies = [
  "atoi_simd",
  "fast-float2",

@@ -454,19 +454,136 @@ impl ExcelMcpServer {
     async fn set_doc_properties(&self, Parameters(i): Parameters<SetDocPropertiesInput>) -> String {
         tool_fn!(self.store, tools::expanded::set_doc_properties, i)
     }
+
+    // ── New chart types (4) ──
+
+    #[tool(
+        description = "Add a sunburst chart (Excel 2016+ ChartEx). Hierarchical data with category labels and values."
+    )]
+    async fn add_sunburst_chart(
+        &self,
+        Parameters(i): Parameters<AddSunburstChartInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::add_sunburst_chart, i)
+    }
+
+    #[tool(
+        description = "Add a histogram chart (Excel 2016+ ChartEx). Raw data values with optional bin_count, bin_width, and pareto overlay."
+    )]
+    async fn add_histogram_chart(
+        &self,
+        Parameters(i): Parameters<AddHistogramChartInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::add_histogram_chart, i)
+    }
+
+    #[tool(
+        description = "Add a box & whisker chart (Excel 2016+ ChartEx). Data sets with outliers, mean markers, and inner points options."
+    )]
+    async fn add_box_whisker_chart(
+        &self,
+        Parameters(i): Parameters<AddBoxWhiskerChartInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::add_box_whisker_chart, i)
+    }
+
+    #[tool(
+        description = "Add a map chart (Excel 2016+ ChartEx). Geographic data with location names and values. map_level: 'country' or 'region'."
+    )]
+    async fn add_map_chart(&self, Parameters(i): Parameters<AddMapChartInput>) -> String {
+        tool_fn!(self.store, tools::expanded::add_map_chart, i)
+    }
+
+    // ── Interactive controls (3) ──
+
+    #[tool(
+        description = "Add a slicer — interactive filter for a pivot table. Specify pivot_table_name and field_name."
+    )]
+    async fn add_slicer(&self, Parameters(i): Parameters<AddSlicerInput>) -> String {
+        tool_fn!(self.store, tools::expanded::add_slicer, i)
+    }
+
+    #[tool(
+        description = "Add a timeline — date filter for a pivot table. Specify pivot_table_name and date field_name."
+    )]
+    async fn add_timeline(&self, Parameters(i): Parameters<AddTimelineInput>) -> String {
+        tool_fn!(self.store, tools::expanded::add_timeline, i)
+    }
+
+    #[tool(
+        description = "Add a form control: control_type='button', 'checkbox', 'dropdown', or 'spinner'. Checkbox supports cell_link, dropdown takes comma-separated input_range."
+    )]
+    async fn add_form_control(&self, Parameters(i): Parameters<AddFormControlInput>) -> String {
+        tool_fn!(self.store, tools::expanded::add_form_control, i)
+    }
+
+    // ── Advanced save/open (2) ──
+
+    #[tool(
+        description = "Save workbook in different formats: 'xlsx' (default), 'template' (.xltx), 'encrypted' (password-protected), 'parallel' (fast compression). Formulas are recalculated before save."
+    )]
+    async fn save_workbook_advanced(
+        &self,
+        Parameters(i): Parameters<SaveWorkbookAdvancedInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::save_workbook_advanced, i)
+    }
+
+    #[tool(description = "Open a password-protected (encrypted) Excel workbook")]
+    async fn open_workbook_encrypted(
+        &self,
+        Parameters(i): Parameters<OpenWorkbookEncryptedInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::open_workbook_encrypted, i)
+    }
+
+    // ── Named ranges CRUD (1) ──
+
+    #[tool(
+        description = "Manage named ranges: action='add' (name, formula), 'add_scoped' (name, formula, sheet_index), 'update' (name, formula), 'remove' (name, sheet_index), 'list'"
+    )]
+    async fn manage_named_ranges(
+        &self,
+        Parameters(i): Parameters<ManageNamedRangesInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::manage_named_ranges, i)
+    }
+
+    // ── Sheet metadata (1) ──
+
+    #[tool(
+        description = "Read sheet metadata: info='used_range', 'hyperlinks', 'merge_ranges', 'charts', or 'all'"
+    )]
+    async fn read_sheet_metadata(
+        &self,
+        Parameters(i): Parameters<ReadSheetMetadataInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::read_sheet_metadata, i)
+    }
+
+    // ── Chart sheet (1) ──
+
+    #[tool(
+        description = "Add a dedicated chart-only sheet (no cells, just a chart). Specify chart_type, series or data_range, title."
+    )]
+    async fn add_chart_sheet(&self, Parameters(i): Parameters<AddChartSheetInput>) -> String {
+        tool_fn!(self.store, tools::expanded::add_chart_sheet, i)
+    }
 }
 
 #[tool_handler]
 impl ServerHandler for ExcelMcpServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build()).with_instructions(
-            "Excel file manipulation server powered by zavora-xlsx. 43 tools covering: \
+            "Excel file manipulation server powered by zavora-xlsx. 56 tools covering: \
                  workbook lifecycle, sheet management, cell reading/writing, formatting, \
-                 charts (7 types + pivot charts + waterfall/funnel/treemap), images, shapes, \
-                 tables, conditional formatting, data validation, sparklines, pivot tables, \
-                 page setup, comments, hyperlinks, named ranges, row/column manipulation, \
-                 grouping, protection, autofilter, formulas (regular/array/dynamic), rich text, \
-                 document properties, and CSV export."
+                 charts (11 types + pivot charts + waterfall/funnel/treemap/sunburst/histogram/box-whisker/map), \
+                 images, shapes, tables, conditional formatting, data validation, sparklines, \
+                 pivot tables, slicers, timelines, form controls, page setup, comments, hyperlinks, \
+                 named ranges (CRUD with scoping), row/column manipulation, grouping, protection, \
+                 autofilter, formulas (regular/array/dynamic with recalculation), rich text, \
+                 document properties, sheet metadata, chart sheets, encrypted open/save, \
+                 template save, parallel save, and CSV export."
                 .to_string(),
         )
     }

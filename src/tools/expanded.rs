@@ -2030,3 +2030,599 @@ pub fn set_doc_properties(
     entry.data.set_properties(props);
     Ok(success_no_data("Document properties set"))
 }
+
+// ══════════════════════════════════════════════════════════════════
+// v0.2.0: New tools — 4 chart types, slicers, timelines, form controls,
+// advanced save, named ranges CRUD, sheet metadata, chart sheet,
+// chart enhancements, protection options
+// ══════════════════════════════════════════════════════════════════
+
+pub fn add_sunburst_chart(
+    store: &mut WorkbookStore,
+    input: AddSunburstChartInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let mut chart = zavora_xlsx::SunburstChart::new();
+    if let Some(ref t) = input.title {
+        chart.set_title(t);
+    }
+    if let Some(ref n) = input.series_name {
+        chart.set_series_name(n);
+    }
+    chart.set_width(input.width);
+    chart.set_height(input.height);
+    // SunburstChart uses add_level for hierarchy labels and set_values for leaf sizes
+    let labels: Vec<&str> = input.points.iter().map(|p| p.category.as_str()).collect();
+    let values: Vec<f64> = input.points.iter().map(|p| p.value).collect();
+    chart.add_level(&labels);
+    chart.set_values(&values);
+    let (row, col) = if let Some(ref c) = input.cell {
+        zavora_xlsx::utility::parse_cell_ref(c).map_err(|e| anyhow::anyhow!("{e}"))?
+    } else {
+        (0, 0)
+    };
+    entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .insert_sunburst(row, col, &chart)?;
+    Ok(success_no_data(&format!(
+        "Sunburst chart added to '{}'",
+        input.sheet_name
+    )))
+}
+
+pub fn add_histogram_chart(
+    store: &mut WorkbookStore,
+    input: AddHistogramChartInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let mut chart = if input.pareto == Some(true) {
+        zavora_xlsx::HistogramChart::pareto()
+    } else {
+        zavora_xlsx::HistogramChart::new()
+    };
+    if let Some(ref t) = input.title {
+        chart.set_title(t);
+    }
+    if let Some(ref n) = input.series_name {
+        chart.set_series_name(n);
+    }
+    chart.set_width(input.width);
+    chart.set_height(input.height);
+    if let Some(bc) = input.bin_count {
+        chart.set_bin_count(bc);
+    }
+    if let Some(bw) = input.bin_width {
+        chart.set_bin_width(bw);
+    }
+    let values: Vec<f64> = input.points.iter().map(|p| p.value).collect();
+    chart.set_values(&values);
+    let (row, col) = if let Some(ref c) = input.cell {
+        zavora_xlsx::utility::parse_cell_ref(c).map_err(|e| anyhow::anyhow!("{e}"))?
+    } else {
+        (0, 0)
+    };
+    entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .insert_histogram(row, col, &chart)?;
+    Ok(success_no_data(&format!(
+        "Histogram chart added to '{}'",
+        input.sheet_name
+    )))
+}
+
+pub fn add_box_whisker_chart(
+    store: &mut WorkbookStore,
+    input: AddBoxWhiskerChartInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let mut chart = zavora_xlsx::BoxWhiskerChart::new();
+    if let Some(ref t) = input.title {
+        chart.set_title(t);
+    }
+    if let Some(ref n) = input.series_name {
+        chart.set_series_name(n);
+    }
+    chart.set_width(input.width);
+    chart.set_height(input.height);
+    if let Some(v) = input.show_outliers {
+        chart.set_show_outliers(v);
+    }
+    if let Some(v) = input.show_mean {
+        chart.set_show_mean_markers(v);
+    }
+    if let Some(v) = input.show_inner_points {
+        chart.set_show_inner_points(v);
+    }
+    // BoxWhiskerChart uses add_data_set(category, &[f64]) for each box
+    for pt in &input.points {
+        chart.add_data_set(&pt.category, &[pt.value]);
+    }
+    let (row, col) = if let Some(ref c) = input.cell {
+        zavora_xlsx::utility::parse_cell_ref(c).map_err(|e| anyhow::anyhow!("{e}"))?
+    } else {
+        (0, 0)
+    };
+    entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .insert_box_whisker(row, col, &chart)?;
+    Ok(success_no_data(&format!(
+        "Box & whisker chart added to '{}'",
+        input.sheet_name
+    )))
+}
+
+pub fn add_map_chart(
+    store: &mut WorkbookStore,
+    input: AddMapChartInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let mut chart = zavora_xlsx::MapChart::new();
+    if let Some(ref t) = input.title {
+        chart.set_title(t);
+    }
+    if let Some(ref n) = input.series_name {
+        chart.set_series_name(n);
+    }
+    chart.set_width(input.width);
+    chart.set_height(input.height);
+    if let Some(ref ml) = input.map_level {
+        let level = match ml.as_str() {
+            "region" => zavora_xlsx::MapLevel::Region,
+            _ => zavora_xlsx::MapLevel::Country,
+        };
+        chart.set_map_level(level);
+    }
+    for pt in &input.points {
+        chart.add_point(&pt.category, pt.value);
+    }
+    let (row, col) = if let Some(ref c) = input.cell {
+        zavora_xlsx::utility::parse_cell_ref(c).map_err(|e| anyhow::anyhow!("{e}"))?
+    } else {
+        (0, 0)
+    };
+    entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .insert_map(row, col, &chart)?;
+    Ok(success_no_data(&format!(
+        "Map chart added to '{}'",
+        input.sheet_name
+    )))
+}
+
+pub fn add_slicer(
+    store: &mut WorkbookStore,
+    input: AddSlicerInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    // Slicer uses builder pattern (takes ownership)
+    let mut slicer = zavora_xlsx::Slicer::new(&input.pivot_table_name, &input.field_name);
+    if let Some(w) = input.width {
+        slicer = slicer.set_width(w);
+    }
+    if let Some(h) = input.height {
+        slicer = slicer.set_height(h);
+    }
+    let (row, col) = if let Some(ref c) = input.cell {
+        zavora_xlsx::utility::parse_cell_ref(c).map_err(|e| anyhow::anyhow!("{e}"))?
+    } else {
+        (0, 0)
+    };
+    entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .add_slicer(row, col, &slicer)?;
+    Ok(success_no_data(&format!(
+        "Slicer for '{}' added to '{}'",
+        input.field_name, input.sheet_name
+    )))
+}
+
+pub fn add_timeline(
+    store: &mut WorkbookStore,
+    input: AddTimelineInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let timeline = zavora_xlsx::Timeline::new(&input.pivot_table_name, &input.field_name);
+    let (row, col) = if let Some(ref c) = input.cell {
+        zavora_xlsx::utility::parse_cell_ref(c).map_err(|e| anyhow::anyhow!("{e}"))?
+    } else {
+        (0, 0)
+    };
+    entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .add_timeline(row, col, &timeline)?;
+    Ok(success_no_data(&format!(
+        "Timeline for '{}' added to '{}'",
+        input.field_name, input.sheet_name
+    )))
+}
+
+pub fn add_form_control(
+    store: &mut WorkbookStore,
+    input: AddFormControlInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let (row, col) =
+        zavora_xlsx::utility::parse_cell_ref(&input.cell).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let text = input.text.as_deref().unwrap_or("Control");
+    let fc = match input.control_type.as_str() {
+        "checkbox" => {
+            if let Some(ref cl) = input.cell_link {
+                zavora_xlsx::FormControl::checkbox_with_link(text, cl)
+            } else {
+                zavora_xlsx::FormControl::checkbox(text)
+            }
+        }
+        "dropdown" => {
+            let items = input
+                .input_range
+                .as_deref()
+                .unwrap_or("")
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .collect();
+            zavora_xlsx::FormControl::dropdown(items)
+        }
+        "spinner" => zavora_xlsx::FormControl::spinner(0, 100, 0),
+        _ => zavora_xlsx::FormControl::button(text),
+    };
+    entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .add_form_control(row, col, fc);
+    Ok(success_no_data(&format!(
+        "Form control '{}' added at {}",
+        input.control_type, input.cell
+    )))
+}
+
+pub fn save_workbook_advanced(
+    store: &mut WorkbookStore,
+    input: SaveWorkbookAdvancedInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    if entry.read_only {
+        return Ok(error(
+            ErrorCategory::EngineUnsupported,
+            "Read-only workbooks cannot be saved",
+            "Reopen in edit mode.",
+        ));
+    }
+    let _ = entry.data.recalculate();
+    let path = std::path::Path::new(&input.file_path);
+    match input.format.as_str() {
+        "template" => entry
+            .data
+            .save_as_template(path)
+            .map_err(|e| anyhow::anyhow!("{e}"))?,
+        "encrypted" => {
+            let pw = input.password.as_deref().unwrap_or("");
+            entry
+                .data
+                .save_encrypted(path, pw)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+        }
+        "parallel" => entry
+            .data
+            .save_parallel(path)
+            .map_err(|e| anyhow::anyhow!("{e}"))?,
+        _ => entry
+            .data
+            .save(path)
+            .map_err(|e| anyhow::anyhow!("{e}"))?,
+    }
+    Ok(success_no_data(&format!(
+        "Workbook saved as {} to {}",
+        input.format, input.file_path
+    )))
+}
+
+pub fn open_workbook_encrypted(
+    store: &mut WorkbookStore,
+    input: OpenWorkbookEncryptedInput,
+) -> Result<String, anyhow::Error> {
+    use crate::store::WorkbookEntry;
+    use std::time::Instant;
+
+    if store.is_full() {
+        return Ok(error(
+            ErrorCategory::CapacityExceeded,
+            "Workbook store is at maximum capacity",
+            "Save and close an existing workbook first.",
+        ));
+    }
+    let path = std::path::Path::new(&input.file_path);
+    if !path.exists() {
+        return Ok(error(
+            ErrorCategory::NotFound,
+            &format!("File not found: {}", input.file_path),
+            "Check the file path.",
+        ));
+    }
+    let wb = zavora_xlsx::Workbook::open_with_password(path, &input.password)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let sheets = crate::engines::zavora::sheet_summaries(&wb);
+    let entry = WorkbookEntry {
+        id: String::new(),
+        data: wb,
+        read_only: false,
+        last_access: Instant::now(),
+    };
+    let id = store.insert(entry).map_err(|e| anyhow::anyhow!("{}", e))?;
+    Ok(success(
+        "Encrypted workbook opened",
+        crate::types::responses::WorkbookInfo {
+            workbook_id: id,
+            engine: "zavora-xlsx".to_string(),
+            sheets,
+        },
+    ))
+}
+
+pub fn manage_named_ranges(
+    store: &mut WorkbookStore,
+    input: ManageNamedRangesInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    match input.action.as_str() {
+        "add" => {
+            let name = input.name.as_deref().unwrap_or("");
+            let formula = input.formula.as_deref().unwrap_or("");
+            entry.data.define_name(name, formula);
+            Ok(success_no_data(&format!("Named range '{}' added", name)))
+        }
+        "add_scoped" => {
+            let name = input.name.as_deref().unwrap_or("");
+            let formula = input.formula.as_deref().unwrap_or("");
+            let sheet_idx = input.sheet_index.unwrap_or(0);
+            entry.data.define_name_scoped(name, formula, sheet_idx);
+            Ok(success_no_data(&format!(
+                "Scoped named range '{}' added for sheet {}",
+                name, sheet_idx
+            )))
+        }
+        "update" => {
+            let name = input.name.as_deref().unwrap_or("");
+            let formula = input.formula.as_deref().unwrap_or("");
+            let _ = entry.data.update_named_range(name, formula);
+            Ok(success_no_data(&format!("Named range '{}' updated", name)))
+        }
+        "remove" => {
+            let name = input.name.as_deref().unwrap_or("");
+            let scope = if let Some(idx) = input.sheet_index {
+                zavora_xlsx::DefinedNameScope::Sheet(idx)
+            } else {
+                zavora_xlsx::DefinedNameScope::Workbook
+            };
+            let _ = entry.data.remove_named_range(name, &scope);
+            Ok(success_no_data(&format!("Named range '{}' removed", name)))
+        }
+        _ => {
+            // "list"
+            let names: Vec<serde_json::Value> = entry
+                .data
+                .defined_names_with_scope()
+                .iter()
+                .map(|dn| {
+                    serde_json::json!({
+                        "name": dn.name,
+                        "formula": dn.formula,
+                        "scope": format!("{:?}", dn.scope),
+                    })
+                })
+                .collect();
+            Ok(success("Named ranges listed", names))
+        }
+    }
+}
+
+pub fn read_sheet_metadata(
+    store: &mut WorkbookStore,
+    input: ReadSheetMetadataInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let ws = entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+
+    let mut result = serde_json::Map::new();
+
+    if input.info == "used_range" || input.info == "all" {
+        if let Some((r1, c1, r2, c2)) = ws.used_range() {
+            let range_str = format!(
+                "{}:{}",
+                zavora_xlsx::utility::to_a1(r1, c1),
+                zavora_xlsx::utility::to_a1(r2, c2)
+            );
+            result.insert("used_range".into(), serde_json::json!(range_str));
+        } else {
+            result.insert("used_range".into(), serde_json::Value::Null);
+        }
+    }
+
+    if input.info == "hyperlinks" || input.info == "all" {
+        let links: Vec<serde_json::Value> = ws
+            .hyperlinks()
+            .iter()
+            .map(|h| {
+                serde_json::json!({
+                    "cell": zavora_xlsx::utility::to_a1(h.row, h.col),
+                    "url": h.url,
+                    "location": h.location,
+                    "tooltip": h.tooltip,
+                })
+            })
+            .collect();
+        result.insert("hyperlinks".into(), serde_json::json!(links));
+    }
+
+    if input.info == "merge_ranges" || input.info == "all" {
+        let merges: Vec<String> = ws
+            .merge_ranges()
+            .iter()
+            .map(|(r1, c1, r2, c2)| {
+                format!(
+                    "{}:{}",
+                    zavora_xlsx::utility::to_a1(*r1, *c1),
+                    zavora_xlsx::utility::to_a1(*r2, *c2)
+                )
+            })
+            .collect();
+        result.insert("merge_ranges".into(), serde_json::json!(merges));
+    }
+
+    if input.info == "charts" || input.info == "all" {
+        let charts: Vec<serde_json::Value> = ws
+            .charts()
+            .iter()
+            .map(|c| {
+                serde_json::json!({
+                    "title": c.title(),
+                    "type": format!("{:?}", c.chart_type()),
+                    "series_count": c.series().len(),
+                })
+            })
+            .collect();
+        result.insert("charts".into(), serde_json::json!(charts));
+    }
+
+    Ok(success(
+        "Sheet metadata read",
+        serde_json::Value::Object(result),
+    ))
+}
+
+pub fn add_chart_sheet(
+    store: &mut WorkbookStore,
+    input: AddChartSheetInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let ct = match input.chart_type {
+        ChartType::Bar => zavora_xlsx::ChartType::Bar,
+        ChartType::Column => zavora_xlsx::ChartType::Column,
+        ChartType::Line => zavora_xlsx::ChartType::Line,
+        ChartType::Pie => zavora_xlsx::ChartType::Pie,
+        ChartType::Scatter => zavora_xlsx::ChartType::Scatter,
+        ChartType::Area => zavora_xlsx::ChartType::Area,
+        ChartType::Doughnut => zavora_xlsx::ChartType::Doughnut,
+    };
+    let mut chart = zavora_xlsx::Chart::new(ct);
+    if let Some(ref t) = input.title {
+        chart.set_title(t);
+    }
+    if let Some(ref x) = input.x_axis_label {
+        chart.set_x_axis_name(x);
+    }
+    if let Some(ref y) = input.y_axis_label {
+        chart.set_y_axis_name(y);
+    }
+    if let Some(ref lp) = input.legend_position {
+        chart.set_legend_position(match lp {
+            LegendPosition::Top => zavora_xlsx::LegendPosition::Top,
+            LegendPosition::Bottom => zavora_xlsx::LegendPosition::Bottom,
+            LegendPosition::Left => zavora_xlsx::LegendPosition::Left,
+            LegendPosition::Right => zavora_xlsx::LegendPosition::Right,
+            LegendPosition::None => zavora_xlsx::LegendPosition::None,
+        });
+    }
+    if !input.series.is_empty() {
+        for si in &input.series {
+            let s = chart.add_series();
+            s.set_values(&si.values);
+            if let Some(ref c) = si.categories {
+                s.set_categories(c);
+            }
+            if let Some(ref n) = si.name {
+                s.set_name(n);
+            }
+        }
+    } else if let Some(ref dr) = input.data_range {
+        chart.add_series().set_values(dr);
+    }
+    entry
+        .data
+        .add_chart_sheet(&input.sheet_name, chart)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    Ok(success_no_data(&format!(
+        "Chart sheet '{}' added",
+        input.sheet_name
+    )))
+}

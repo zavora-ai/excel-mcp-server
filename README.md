@@ -2,7 +2,7 @@
 
 A high-performance [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that gives AI assistants full control over Excel spreadsheets. Built in Rust with [zavora-xlsx](https://github.com/zavora-ai/zavora-xlsx) for native xlsx read/write and [rmcp](https://github.com/modelcontextprotocol/rust-sdk) for the MCP protocol layer.
 
-**43 tools** covering the complete Excel feature set — from basic cell writes to pivot tables, charts, conditional formatting, shapes, and document properties.
+**56 tools** covering the complete Excel feature set — from basic cell writes to pivot tables, charts, conditional formatting, shapes, slicers, timelines, form controls, and document properties.
 
 ## Install
 
@@ -166,7 +166,7 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 | `set_visibility` | Hide or unhide a row or column |
 | `set_sheet_settings` | Configure sheet display: hidden, zoom, gridlines, tab color, right-to-left |
 
-### Charts (4 tools)
+### Charts (8 tools)
 
 | Tool | Description |
 |---|---|
@@ -174,6 +174,18 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 | `add_waterfall_chart` | Add a waterfall chart (Excel 2016+ ChartEx) with increase/decrease/total points |
 | `add_funnel_chart` | Add a funnel chart (Excel 2016+ ChartEx) |
 | `add_treemap_chart` | Add a treemap chart (Excel 2016+ ChartEx) with optional per-point colors |
+| `add_sunburst_chart` | Add a sunburst chart (Excel 2016+ ChartEx) for hierarchical data |
+| `add_histogram_chart` | Add a histogram chart with bin control and optional Pareto overlay |
+| `add_box_whisker_chart` | Add a box & whisker chart with outliers, mean markers, inner points |
+| `add_map_chart` | Add a geographic map chart with country/region levels |
+
+### Interactive Controls (3 tools)
+
+| Tool | Description |
+|---|---|
+| `add_slicer` | Add an interactive slicer filter for a pivot table |
+| `add_timeline` | Add a date timeline filter for a pivot table |
+| `add_form_control` | Add a form control (button, checkbox, dropdown, spinner) |
 
 ### Tables & Data Features (4 tools)
 
@@ -210,11 +222,12 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 | `manage_comments` | Add or read cell comments/notes |
 | `add_link` | Add external URLs or internal sheet references |
 
-### Named Ranges (1 tool)
+### Named Ranges (2 tools)
 
 | Tool | Description |
 |---|---|
 | `manage_defined_names` | Add or list defined names (named ranges) |
+| `manage_named_ranges` | Full CRUD: add, add_scoped, update, remove, list with scope info |
 
 ### Row/Column Manipulation (2 tools)
 
@@ -242,6 +255,25 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 | Tool | Description |
 |---|---|
 | `set_doc_properties` | Set title, author, subject, description, keywords, category, company |
+
+### Advanced Save/Open (2 tools)
+
+| Tool | Description |
+|---|---|
+| `save_workbook_advanced` | Save as template (.xltx), encrypted (password-protected), or parallel (fast compression) |
+| `open_workbook_encrypted` | Open a password-protected Excel workbook |
+
+### Sheet Metadata (1 tool)
+
+| Tool | Description |
+|---|---|
+| `read_sheet_metadata` | Read used_range, hyperlinks, merge_ranges, charts, or all metadata at once |
+
+### Chart Sheets (1 tool)
+
+| Tool | Description |
+|---|---|
+| `add_chart_sheet` | Add a dedicated chart-only sheet (no cells, just a full-page chart) |
 
 ## Example Workflow
 

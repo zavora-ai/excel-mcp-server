@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2025-07-25
+
+### Critical Fix
+
+- **Formula recalculation**: `save_workbook` now calls `Workbook::recalculate()` before writing to disk. All formula cells are evaluated with dependency graph ordering, circular reference detection, and volatile function support. Previously, formula cells saved with cached value 0.
+
+### New Chart Types (4 tools)
+
+- `add_sunburst_chart` — hierarchical sunburst chart (Excel 2016+ ChartEx)
+- `add_histogram_chart` — histogram with optional bin_count, bin_width, and Pareto overlay
+- `add_box_whisker_chart` — box & whisker with outliers, mean markers, inner points
+- `add_map_chart` — geographic map chart with country/region levels
+
+### Interactive Controls (3 tools)
+
+- `add_slicer` — interactive filter for pivot tables
+- `add_timeline` — date filter for pivot tables
+- `add_form_control` — button, checkbox, dropdown, spinner form controls
+
+### Advanced Save/Open (2 tools)
+
+- `save_workbook_advanced` — save as template (.xltx), encrypted (password-protected), or parallel (fast compression)
+- `open_workbook_encrypted` — open password-protected workbooks
+
+### Named Ranges (1 tool)
+
+- `manage_named_ranges` — full CRUD: add, add_scoped (sheet-level), update, remove, list with scope info
+
+### Sheet Metadata (1 tool)
+
+- `read_sheet_metadata` — read used_range, hyperlinks, merge_ranges, charts, or all at once
+
+### Chart Sheet (1 tool)
+
+- `add_chart_sheet` — dedicated chart-only sheet (no cells)
+
+### Changed
+
+- Upgraded zavora-xlsx dependency from 0.1.0 to 0.1.1 (adds `Workbook::recalculate()`)
+- Tool count increased from 43 to 56
+
 ## [0.1.1] - 2025-07-25
 
 ### Changed
@@ -112,5 +153,6 @@ Initial public release of Excel MCP Server.
 - Install with `cargo install excel-mcp-server`
 - Apache 2.0 license
 
+[0.2.0]: https://github.com/zavora-ai/excel-mcp-server/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/zavora-ai/excel-mcp-server/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/zavora-ai/excel-mcp-server/releases/tag/v0.1.0

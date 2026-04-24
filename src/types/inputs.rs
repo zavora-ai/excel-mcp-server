@@ -1439,3 +1439,375 @@ pub struct SetDocPropertiesInput {
     #[serde(default)]
     pub company: Option<String>,
 }
+
+// ══════════════════════════════════════════════════════════════════
+// v0.2.0: New tools — charts, pivots, controls, protection, save formats
+// ══════════════════════════════════════════════════════════════════
+
+/// Input for adding a sunburst chart (Excel 2016+ ChartEx)
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddSunburstChartInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub series_name: Option<String>,
+    pub points: Vec<TreemapPoint>,
+    #[serde(default = "default_chart_width")]
+    pub width: u32,
+    #[serde(default = "default_chart_height")]
+    pub height: u32,
+    #[serde(default)]
+    pub cell: Option<String>,
+}
+
+/// Input for adding a histogram chart (Excel 2016+ ChartEx)
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddHistogramChartInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub series_name: Option<String>,
+    pub points: Vec<FunnelPoint>,
+    #[serde(default)]
+    pub bin_count: Option<u32>,
+    #[serde(default)]
+    pub bin_width: Option<f64>,
+    /// Show Pareto line overlay
+    #[serde(default)]
+    pub pareto: Option<bool>,
+    #[serde(default = "default_chart_width")]
+    pub width: u32,
+    #[serde(default = "default_chart_height")]
+    pub height: u32,
+    #[serde(default)]
+    pub cell: Option<String>,
+}
+
+/// Input for adding a box & whisker chart (Excel 2016+ ChartEx)
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddBoxWhiskerChartInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub series_name: Option<String>,
+    pub points: Vec<FunnelPoint>,
+    /// Show outlier points
+    #[serde(default)]
+    pub show_outliers: Option<bool>,
+    /// Show mean markers
+    #[serde(default)]
+    pub show_mean: Option<bool>,
+    /// Show inner data points
+    #[serde(default)]
+    pub show_inner_points: Option<bool>,
+    #[serde(default = "default_chart_width")]
+    pub width: u32,
+    #[serde(default = "default_chart_height")]
+    pub height: u32,
+    #[serde(default)]
+    pub cell: Option<String>,
+}
+
+/// Input for adding a map chart (Excel 2016+ ChartEx)
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddMapChartInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub series_name: Option<String>,
+    pub points: Vec<FunnelPoint>,
+    /// Map level: "world", "continent", "country", "state"
+    #[serde(default)]
+    pub map_level: Option<String>,
+    #[serde(default = "default_chart_width")]
+    pub width: u32,
+    #[serde(default = "default_chart_height")]
+    pub height: u32,
+    #[serde(default)]
+    pub cell: Option<String>,
+}
+
+/// Input for adding a slicer to a pivot table
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddSlicerInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Name of the pivot table to connect to
+    pub pivot_table_name: String,
+    /// Field name to filter on
+    pub field_name: String,
+    /// Anchor cell for the slicer
+    #[serde(default)]
+    pub cell: Option<String>,
+    #[serde(default)]
+    pub width: Option<u32>,
+    #[serde(default)]
+    pub height: Option<u32>,
+}
+
+/// Input for adding a timeline to a pivot table
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddTimelineInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Name of the pivot table to connect to
+    pub pivot_table_name: String,
+    /// Date field name
+    pub field_name: String,
+    /// Anchor cell for the timeline
+    #[serde(default)]
+    pub cell: Option<String>,
+    #[serde(default)]
+    pub width: Option<u32>,
+    #[serde(default)]
+    pub height: Option<u32>,
+}
+
+/// Input for adding a form control (button, checkbox, spinner, dropdown)
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddFormControlInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Anchor cell
+    pub cell: String,
+    /// Control type: "button", "checkbox", "spinner", "dropdown", "radio", "scroll_bar", "group_box", "label"
+    pub control_type: String,
+    /// Display text/label
+    #[serde(default)]
+    pub text: Option<String>,
+    /// Cell link for the control value
+    #[serde(default)]
+    pub cell_link: Option<String>,
+    /// Input range (for dropdown/list controls)
+    #[serde(default)]
+    pub input_range: Option<String>,
+    #[serde(default)]
+    pub width: Option<u32>,
+    #[serde(default)]
+    pub height: Option<u32>,
+}
+
+/// Input for saving in different formats
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SaveWorkbookAdvancedInput {
+    pub workbook_id: String,
+    pub file_path: String,
+    /// Save format: "xlsx" (default), "xlsm", "template", "template_macro", "encrypted", "parallel"
+    #[serde(default = "default_xlsx")]
+    pub format: String,
+    /// Password for encrypted save
+    #[serde(default)]
+    pub password: Option<String>,
+}
+
+fn default_xlsx() -> String {
+    "xlsx".to_string()
+}
+
+/// Input for opening a password-protected workbook
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct OpenWorkbookEncryptedInput {
+    pub file_path: String,
+    pub password: String,
+}
+
+/// Input for managing named ranges with full CRUD and scoping
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ManageNamedRangesInput {
+    pub workbook_id: String,
+    /// "add", "update", "remove", "list", "add_scoped"
+    pub action: String,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub formula: Option<String>,
+    /// Sheet index for scoped names
+    #[serde(default)]
+    pub sheet_index: Option<usize>,
+}
+
+/// Input for reading worksheet metadata (used_range, hyperlinks, merge_ranges, charts)
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ReadSheetMetadataInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// What to read: "used_range", "hyperlinks", "merge_ranges", "charts", "all"
+    #[serde(default = "default_all")]
+    pub info: String,
+}
+
+fn default_all() -> String {
+    "all".to_string()
+}
+
+/// Input for adding a chart sheet (dedicated chart-only sheet)
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddChartSheetInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub chart_type: ChartType,
+    #[serde(default)]
+    pub series: Vec<ChartSeriesInput>,
+    #[serde(default)]
+    pub data_range: Option<String>,
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub x_axis_label: Option<String>,
+    #[serde(default)]
+    pub y_axis_label: Option<String>,
+    #[serde(default)]
+    pub legend_position: Option<LegendPosition>,
+}
+
+/// Chart enhancement options (extend existing add_chart)
+#[derive(Deserialize, JsonSchema)]
+pub struct ChartEnhancements {
+    /// Show data table below chart
+    #[serde(default)]
+    pub show_data_table: Option<bool>,
+    /// 3D perspective rotation
+    #[serde(default)]
+    pub view_3d: Option<View3DInput>,
+    /// Preset chart style number (1-48)
+    #[serde(default)]
+    pub style: Option<u8>,
+    /// Accessibility alt text (title, description)
+    #[serde(default)]
+    pub alt_text: Option<AltTextInput>,
+    /// Y-axis minimum value
+    #[serde(default)]
+    pub y_axis_min: Option<f64>,
+    /// Y-axis maximum value
+    #[serde(default)]
+    pub y_axis_max: Option<f64>,
+    /// Y-axis logarithmic base (e.g. 10)
+    #[serde(default)]
+    pub y_axis_log_base: Option<f64>,
+    /// Reverse X axis
+    #[serde(default)]
+    pub x_axis_reverse: Option<bool>,
+    /// Reverse Y axis
+    #[serde(default)]
+    pub y_axis_reverse: Option<bool>,
+    /// X-axis number format
+    #[serde(default)]
+    pub x_axis_format: Option<String>,
+    /// Y-axis number format
+    #[serde(default)]
+    pub y_axis_format: Option<String>,
+    /// Show drop lines
+    #[serde(default)]
+    pub drop_lines: Option<bool>,
+    /// Show high-low lines
+    #[serde(default)]
+    pub high_low_lines: Option<bool>,
+    /// Plot area background fill color (hex)
+    #[serde(default)]
+    pub plot_area_fill: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct View3DInput {
+    #[serde(default)]
+    pub rot_x: Option<i16>,
+    #[serde(default)]
+    pub rot_y: Option<i16>,
+    #[serde(default)]
+    pub perspective: Option<u8>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct AltTextInput {
+    pub title: String,
+    pub description: String,
+}
+
+/// Enhanced chart series with additional options
+#[derive(Deserialize, JsonSchema)]
+pub struct ChartSeriesEnhanced {
+    pub values: String,
+    #[serde(default)]
+    pub categories: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub color: Option<String>,
+    #[serde(default)]
+    pub data_labels: Option<bool>,
+    #[serde(default)]
+    pub trendline: Option<String>,
+    #[serde(default)]
+    pub marker: Option<String>,
+    #[serde(default)]
+    pub secondary_axis: Option<bool>,
+    /// Line width in points
+    #[serde(default)]
+    pub line_width: Option<f64>,
+    /// Dash style: "solid", "dash", "dot", "dash_dot"
+    #[serde(default)]
+    pub dash_style: Option<String>,
+    /// Gradient stops: array of [color_hex, position_0_to_1]
+    #[serde(default)]
+    pub gradient: Option<Vec<GradientStopInput>>,
+    /// Bubble sizes range (for bubble charts)
+    #[serde(default)]
+    pub bubble_sizes: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct GradientStopInput {
+    pub color: String,
+    pub position: f64,
+}
+
+/// Sheet protection with granular options
+#[derive(Deserialize, JsonSchema)]
+pub struct SheetProtectionOptionsInput {
+    #[serde(default)]
+    pub password: Option<String>,
+    #[serde(default)]
+    pub insert_rows: Option<bool>,
+    #[serde(default)]
+    pub delete_rows: Option<bool>,
+    #[serde(default)]
+    pub insert_columns: Option<bool>,
+    #[serde(default)]
+    pub delete_columns: Option<bool>,
+    #[serde(default)]
+    pub format_cells: Option<bool>,
+    #[serde(default)]
+    pub format_columns: Option<bool>,
+    #[serde(default)]
+    pub format_rows: Option<bool>,
+    #[serde(default)]
+    pub sort: Option<bool>,
+    #[serde(default)]
+    pub insert_hyperlinks: Option<bool>,
+    #[serde(default)]
+    pub select_locked_cells: Option<bool>,
+    #[serde(default)]
+    pub select_unlocked_cells: Option<bool>,
+    #[serde(default)]
+    pub pivot_tables: Option<bool>,
+}

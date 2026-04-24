@@ -23,6 +23,7 @@ pub fn open_workbook(path: &str, read_only: bool) -> Result<Workbook, String> {
 
 /// Save workbook to disk.
 pub fn save_workbook(wb: &mut Workbook, path: &str) -> Result<(), String> {
+    let _ = wb.recalculate();
     wb.save(Path::new(path)).map_err(|e| e.to_string())
 }
 
