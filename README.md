@@ -2,7 +2,7 @@
 
 A high-performance [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that gives AI assistants full control over Excel spreadsheets. Built in Rust with [zavora-xlsx](https://github.com/zavora-ai/zavora-xlsx) for native xlsx read/write and [rmcp](https://github.com/modelcontextprotocol/rust-sdk) for the MCP protocol layer.
 
-**74 tools** covering the complete Excel feature set — from basic cell writes to pivot tables, charts, conditional formatting, shapes, slicers, timelines, form controls, threaded comments, and document properties.
+**74 tools** covering the complete Excel feature set — cell I/O, formatting, 14 chart types, pivot tables with calculated fields, slicers, timelines, form controls, conditional formatting, data validation, images, shapes, threaded comments, formula recalculation, encrypted save/open, and more.
 
 ## Install
 
@@ -12,7 +12,7 @@ cargo install excel-mcp-server
 
 This compiles and installs the binary to `~/.cargo/bin/excel-mcp-server`.
 
-> Requires [Rust](https://rustup.rs/) 1.85+. If you don't have Rust, install it with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`.
+> Requires [Rust](https://rustup.rs/) 1.85+. If you don't have Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 
 ## Client Configuration
 
@@ -61,15 +61,13 @@ Add to `.cursor/mcp.json`:
 
 ### HTTP Mode
 
-For web-based MCP clients, run in HTTP mode:
+For web-based MCP clients:
 
 ```bash
 excel-mcp-server http
 ```
 
-This starts a streamable HTTP server on `127.0.0.1:8080`. Point your client at `http://localhost:8080/mcp`.
-
-Configure the bind address with:
+Starts a streamable HTTP server on `127.0.0.1:8080`. Point your client at `http://localhost:8080/mcp`.
 
 ```bash
 BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
@@ -78,363 +76,314 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 ## Features
 
 - **Create, open, edit, and save** xlsx files through natural language
-- **Read and analyze** existing spreadsheets with pagination and search
-- **Full formatting** — bold, italic, colors, borders, number formats, alignment
-- **10 chart types** — bar, column, line, pie, scatter, area, doughnut, waterfall, funnel, treemap, plus sunburst, histogram, box & whisker, map (14 total)
-- **Chart enhancements** — data tables, 3D views, error bars, axis formatting, drop/high-low lines, gradients, alt text
-- **Pivot tables** with calculated fields, date/range grouping, subtotals, grand totals, value formats
-- **Conditional formatting** — cell value rules, color scales, data bars, icon sets
-- **Data validation** — dropdowns, number ranges, date ranges, custom formulas
+- **Read and analyze** spreadsheets with pagination, search, and CSV export
+- **Full formatting** — bold, italic, colors, borders, number formats, alignment, merge
+- **14 chart types** — bar, column, line, pie, scatter, area, doughnut, waterfall, funnel, treemap, sunburst, histogram, box & whisker, map
+- **Chart enhancements** — data tables, 3D views, error bars, axis formatting/bounds/log scale, drop lines, high-low lines, gradients, bubble sizes, alt text, preset styles
+- **Pivot tables** — calculated fields, date/range grouping, subtotals, grand totals, value formats, row stripes, layout options
+- **Slicers and timelines** — interactive pivot table filters
+- **Form controls** — buttons, checkboxes, dropdowns, spinners
+- **Conditional formatting** — cell value rules, 2/3-color scales, data bars, icon sets
+- **Data validation** — dropdowns, number/date ranges, text length, custom formulas
 - **Tables, sparklines, images, shapes** — full Excel feature coverage
-- **Slicers, timelines, form controls** — interactive pivot filters and UI elements
-- **Threaded comments** — modern conversation-style comments with replies
-- **Formula recalculation** — formulas evaluated with dependency graph before save
+- **Threaded comments** — modern conversation-style comments with replies and timestamps
+- **Formula recalculation** — 58-function engine with dependency graph, evaluated before every save
+- **Multiple save formats** — xlsx, template (.xltx), encrypted (password-protected), parallel compression
+- **Open encrypted** — password-protected workbook support
+- **Named ranges** — full CRUD with workbook and sheet-level scoping
+- **Sheet metadata** — read used range, hyperlinks, merged ranges, embedded charts
+- **Custom XML parts** — add and read custom XML by namespace
+- **Custom document properties** — text, number, integer, boolean, datetime
 - **Two transports** — stdio for CLI clients, streamable HTTP for web clients
-- **Multiple save formats** — xlsx, template, encrypted, parallel compression
-- **In-memory workbook store** with TTL eviction and capacity limits
+- **In-memory workbook store** — 10-workbook capacity with 30-minute TTL eviction
 
-## Tools Reference
+## Tools Reference (74 tools)
 
-### Workbook Lifecycle (4 tools)
-
-| Tool | Description |
-|---|---|
-| `create_workbook` | Create a new empty Excel workbook in memory |
-| `open_workbook` | Open an existing Excel file for reading or editing |
-| `save_workbook` | Save a workbook to disk as an xlsx file |
-| `close_workbook` | Close a workbook and free its memory |
-
-### Workbook Configuration (1 tool)
+### Workbook Lifecycle (4)
 
 | Tool | Description |
 |---|---|
-| `configure_workbook` | Set calc mode (auto/manual), active sheet, document properties (title, author, company) |
+| `create_workbook` | Create a new empty workbook in memory |
+| `open_workbook` | Open an existing xlsx file (edit or read-only mode) |
+| `save_workbook` | Save to disk as xlsx (formulas recalculated automatically) |
+| `close_workbook` | Close and free memory |
 
-### Sheet Management (7 tools)
+### Workbook Configuration (1)
 
 | Tool | Description |
 |---|---|
-| `list_sheets` | List all sheet names in a workbook |
-| `get_sheet_dimensions` | Get the dimensions of a sheet (used range, row count, column count) |
-| `describe_workbook` | Describe a workbook's structure including sheet names, dimensions, and sample data |
-| `add_sheet` | Add a new empty worksheet |
-| `rename_sheet` | Rename an existing worksheet |
+| `configure_workbook` | Set calc mode (auto/manual), active sheet, document properties |
+
+### Sheet Management (7)
+
+| Tool | Description |
+|---|---|
+| `list_sheets` | List all sheet names |
+| `get_sheet_dimensions` | Get used range, row count, column count |
+| `describe_workbook` | Sheet names, dimensions, and sample data |
+| `add_sheet` | Add a new worksheet |
+| `rename_sheet` | Rename a worksheet |
 | `delete_sheet` | Delete a worksheet |
-| `move_worksheet` | Move a worksheet to a different position |
+| `move_worksheet` | Reorder a worksheet |
 
-### Reading Data (4 tools)
-
-| Tool | Description |
-|---|---|
-| `read_sheet` | Read data from a worksheet with optional range and pagination |
-| `read_cell` | Read a single cell's value, type, and formula |
-| `search_cells` | Search for cells matching a value or pattern across sheets |
-| `sheet_to_csv` | Export a sheet as a CSV-formatted string |
-
-### Writing Data (4 tools)
+### Reading (4)
 
 | Tool | Description |
 |---|---|
-| `write_cells` | Write values to multiple cells (auto-detects numbers, booleans, dates, formulas) |
-| `write_row` | Write a row of values starting from a cell, filling rightward |
-| `write_column` | Write a column of values starting from a cell, filling downward |
-| `write_rich_text` | Write rich text (mixed bold/italic/color runs) to a cell |
+| `read_sheet` | Read data with optional range and pagination |
+| `read_cell` | Read a cell's value, type, and formula |
+| `search_cells` | Search by value or pattern across sheets |
+| `sheet_to_csv` | Export as CSV string |
 
-### Formulas (1 tool)
-
-| Tool | Description |
-|---|---|
-| `write_formula` | Write regular, array (CSE), or dynamic (Excel 365 spill) formulas with optional cached result |
-
-### Cell Operations (1 tool)
+### Writing (5)
 
 | Tool | Description |
 |---|---|
-| `manage_cell` | Write a formatted blank cell or clear content and formatting |
+| `write_cells` | Batch write to multiple cells (auto-detects types) |
+| `write_row` | Write values rightward from a cell |
+| `write_column` | Write values downward from a cell |
+| `write_rich_text` | Write mixed bold/italic/color text runs |
+| `write_json_rows` | Write JSON objects as rows with auto headers and type detection |
 
-### Formatting (4 tools)
-
-| Tool | Description |
-|---|---|
-| `set_cell_format` | Apply formatting (bold, italic, colors, borders, number format, alignment) to a range |
-| `merge_cells` | Merge a range of cells into a single cell |
-| `set_row_column_format` | Apply formatting to an entire row or column |
-| `set_dimensions` | Set column width, row height, column range width, or default row height |
-
-### Layout (5 tools)
+### Formulas (1)
 
 | Tool | Description |
 |---|---|
-| `freeze_panes` | Freeze panes at a cell position for scrolling |
-| `autofit_columns` | Auto-fit all column widths based on cell content |
-| `set_selection` | Set the selected/active cell in a sheet |
-| `set_visibility` | Hide or unhide a row or column |
-| `set_sheet_settings` | Configure sheet display: hidden, zoom, gridlines, tab color, right-to-left |
+| `write_formula` | Regular, array (CSE), or dynamic (Excel 365 spill) formulas |
 
-### Charts (8 tools)
+### Cell Operations (1)
 
 | Tool | Description |
 |---|---|
-| `add_chart` | Add a chart (bar/column/line/pie/scatter/area/doughnut) with multiple series, trendlines, markers, pivot source |
-| `add_waterfall_chart` | Add a waterfall chart (Excel 2016+ ChartEx) with increase/decrease/total points |
-| `add_funnel_chart` | Add a funnel chart (Excel 2016+ ChartEx) |
-| `add_treemap_chart` | Add a treemap chart (Excel 2016+ ChartEx) with optional per-point colors |
-| `add_sunburst_chart` | Add a sunburst chart (Excel 2016+ ChartEx) for hierarchical data |
-| `add_histogram_chart` | Add a histogram chart with bin control and optional Pareto overlay |
-| `add_box_whisker_chart` | Add a box & whisker chart with outliers, mean markers, inner points |
-| `add_map_chart` | Add a geographic map chart with country/region levels |
+| `manage_cell` | Write formatted blank or clear content/formatting |
 
-### Interactive Controls (3 tools)
+### Formatting (4)
 
 | Tool | Description |
 |---|---|
-| `add_slicer` | Add an interactive slicer filter for a pivot table |
-| `add_timeline` | Add a date timeline filter for a pivot table |
-| `add_form_control` | Add a form control (button, checkbox, dropdown, spinner) |
+| `set_cell_format` | Bold, italic, colors, borders, number format, alignment on a range |
+| `merge_cells` | Merge a range into one cell |
+| `set_row_column_format` | Format an entire row or column |
+| `set_dimensions` | Column width, row height, column range width, default row height |
 
-### Tables & Data Features (4 tools)
-
-| Tool | Description |
-|---|---|
-| `add_table` | Create an Excel Table with headers, autofilter, and style |
-| `add_conditional_format` | Add conditional formatting: cell value, color scales, data bars, icon sets |
-| `add_data_validation` | Add data validation: dropdowns, number/date ranges, custom formulas |
-| `add_sparkline` | Add a sparkline (line, column, or win/loss) to a cell |
-
-### Images & Shapes (2 tools)
+### Layout (5)
 
 | Tool | Description |
 |---|---|
-| `add_image` | Embed a PNG or JPEG image into a worksheet |
-| `add_shape` | Add a drawing shape (rectangle, ellipse, arrow, callout, text box, etc.) with text, fill, and outline |
+| `freeze_panes` | Freeze rows/columns for scrolling |
+| `autofit_columns` | Auto-fit widths based on content |
+| `set_selection` | Set the active cell |
+| `set_visibility` | Hide/unhide rows or columns |
+| `set_sheet_settings` | Hidden, zoom, gridlines, tab color, right-to-left |
 
-### Pivot Tables (1 tool)
-
-| Tool | Description |
-|---|---|
-| `add_pivot_table` | Create a pivot table with row/column/value/filter fields, aggregation, and layout options |
-
-### Page Setup & Print (1 tool)
+### Charts (8)
 
 | Tool | Description |
 |---|---|
-| `set_page_setup` | Configure landscape, paper size, margins, fit-to-page, print area, headers/footers, gridlines |
+| `add_chart` | Bar/column/line/pie/scatter/area/doughnut with series, trendlines, markers, error bars, gradients, axis formatting, data tables, 3D views, alt text, preset styles |
+| `add_waterfall_chart` | Waterfall (ChartEx) with increase/decrease/total points |
+| `add_funnel_chart` | Funnel (ChartEx) |
+| `add_treemap_chart` | Treemap (ChartEx) with per-point colors |
+| `add_sunburst_chart` | Sunburst (ChartEx) for hierarchical data |
+| `add_histogram_chart` | Histogram with bin control and Pareto overlay |
+| `add_box_whisker_chart` | Box & whisker with outliers, mean markers, inner points |
+| `add_map_chart` | Geographic map with country/region levels |
 
-### Comments & Links (3 tools)
+### Interactive Controls (3)
 
 | Tool | Description |
 |---|---|
-| `manage_comments` | Add or read cell comments/notes |
-| `add_threaded_comment` | Add modern threaded comments with replies and timestamps |
-| `add_link` | Add external URLs or internal sheet references |
+| `add_slicer` | Interactive pivot table filter |
+| `add_timeline` | Date-based pivot table filter |
+| `add_form_control` | Button, checkbox, dropdown, or spinner |
 
-### Named Ranges (2 tools)
+### Tables & Data Features (4)
 
 | Tool | Description |
 |---|---|
-| `manage_defined_names` | Add or list defined names (named ranges) |
-| `manage_named_ranges` | Full CRUD: add, add_scoped, update, remove, list with scope info |
+| `add_table` | Excel Table with headers, autofilter, style |
+| `add_conditional_format` | Cell value, color scales, data bars, icon sets |
+| `add_data_validation` | Dropdowns, number/date ranges, custom formulas |
+| `add_sparkline` | Line, column, or win/loss sparkline |
 
-### Row/Column Manipulation (2 tools)
+### Images & Shapes (2)
+
+| Tool | Description |
+|---|---|
+| `add_image` | Embed PNG or JPEG |
+| `add_shape` | Rectangle, ellipse, arrow, callout, text box with fill and outline |
+
+### Pivot Tables (1)
+
+| Tool | Description |
+|---|---|
+| `add_pivot_table` | Row/column/value/filter fields, aggregation, calculated fields, date/range grouping, subtotals, grand totals, value formats, layout |
+
+### Page Setup (1)
+
+| Tool | Description |
+|---|---|
+| `set_page_setup` | Landscape, paper size, margins, fit-to-page, print area, headers/footers, gridlines |
+
+### Comments & Links (3)
+
+| Tool | Description |
+|---|---|
+| `manage_comments` | Add or read legacy comments/notes |
+| `add_threaded_comment` | Modern threaded comments with replies and timestamps |
+| `add_link` | External URLs or internal sheet references |
+
+### Named Ranges (2)
+
+| Tool | Description |
+|---|---|
+| `manage_defined_names` | Add or list defined names |
+| `manage_named_ranges` | Full CRUD: add, add_scoped, update, remove, list with scope |
+
+### Row/Column Manipulation (2)
 
 | Tool | Description |
 |---|---|
 | `modify_rows` | Insert or delete rows |
 | `modify_columns` | Insert or delete columns |
 
-### Grouping & Protection (3 tools)
+### Protection (3)
 
 | Tool | Description |
 |---|---|
-| `group` | Group rows or columns into expandable outlines |
-| `protect` | Protect sheets, workbooks, or unprotect specific ranges |
-| `protect_sheet_advanced` | Protect with granular options (allow insert/delete/format/sort per feature) |
+| `group` | Group rows/columns into outlines |
+| `protect` | Protect sheet/workbook or unprotect ranges |
+| `protect_sheet_advanced` | Granular protection (allow/deny insert, delete, format, sort per feature) |
 
-### Autofilter & Errors (2 tools)
-
-| Tool | Description |
-|---|---|
-| `manage_autofilter` | Set autofilter on a range with optional column filtering |
-| `ignore_error` | Suppress Excel error indicators (green triangles) on a range |
-
-### Document Properties (2 tools)
+### Autofilter & Errors (2)
 
 | Tool | Description |
 |---|---|
-| `set_doc_properties` | Set title, author, subject, description, keywords, category, company |
-| `set_custom_property` | Set custom document properties (text, number, integer, bool, datetime) |
+| `manage_autofilter` | Set autofilter with optional column filtering |
+| `ignore_error` | Suppress green triangle error indicators |
 
-### Advanced Save/Open (2 tools)
-
-| Tool | Description |
-|---|---|
-| `save_workbook_advanced` | Save as template (.xltx), encrypted (password-protected), or parallel (fast compression). Formulas recalculated before save. |
-| `open_workbook_encrypted` | Open a password-protected Excel workbook |
-
-### Read Enhancements (2 tools)
+### Document Properties (2)
 
 | Tool | Description |
 |---|---|
-| `read_cell_comment` | Read a single cell's comment (author and text) |
-| `read_cell_format` | Read a cell's format (bold, italic, colors, number format, etc.) |
+| `set_doc_properties` | Title, author, subject, description, keywords, category, company |
+| `set_custom_property` | Custom properties (text, number, integer, bool, datetime) |
 
-### Sheet Metadata (1 tool)
-
-| Tool | Description |
-|---|---|
-| `read_sheet_metadata` | Read used_range, hyperlinks, merge_ranges, charts, or all metadata at once |
-
-### Chart Sheets (1 tool)
+### Advanced Save/Open (2)
 
 | Tool | Description |
 |---|---|
-| `add_chart_sheet` | Add a dedicated chart-only sheet (no cells, just a full-page chart) |
+| `save_workbook_advanced` | Save as template, encrypted, or parallel. Formulas recalculated. |
+| `open_workbook_encrypted` | Open password-protected workbooks |
 
-### Custom XML (1 tool)
+### Read Enhancements (3)
 
 | Tool | Description |
 |---|---|
+| `read_cell_comment` | Read a single cell's comment |
+| `read_cell_format` | Read a cell's formatting |
+| `read_sheet_metadata` | Used range, hyperlinks, merged ranges, charts — individually or all |
+
+### Workbook Features (4)
+
+| Tool | Description |
+|---|---|
+| `add_chart_sheet` | Dedicated chart-only sheet |
 | `manage_custom_xml` | Add or read custom XML parts by namespace |
-
-### External Connections (1 tool)
-
-| Tool | Description |
-|---|---|
-| `add_connection` | Add an external data connection |
-
-### Optimization (1 tool)
-
-| Tool | Description |
-|---|---|
-| `set_sst_threshold` | Set shared string table threshold for write performance tuning |
-
-### JSON Data (1 tool)
-
-| Tool | Description |
-|---|---|
-| `write_json_rows` | Write JSON objects as rows with auto-detected types and optional headers |
+| `add_connection` | Add external data connection |
+| `set_sst_threshold` | Shared string table optimization threshold |
 
 ## Example Workflow
 
-A typical AI assistant interaction:
-
-1. **Create a workbook**
-   ```
-   → create_workbook {}
-   ← { workbook_id: "abc-123", sheets: ["Sheet1"] }
-   ```
-
-2. **Write headers and data**
-   ```
-   → write_row { workbook_id: "abc-123", sheet_name: "Sheet1", start_cell: "A1", values: ["Product", "Q1", "Q2", "Q3", "Q4"] }
-   → write_row { workbook_id: "abc-123", sheet_name: "Sheet1", start_cell: "A2", values: ["Widget", 150, 200, 180, 220] }
-   ```
-
-3. **Format headers**
-   ```
-   → set_cell_format { workbook_id: "abc-123", sheet_name: "Sheet1", range: "A1:E1", bold: true, background_color: "#4472C4", font_color: "#FFFFFF" }
-   ```
-
-4. **Add a chart**
-   ```
-   → add_chart { workbook_id: "abc-123", sheet_name: "Sheet1", chart_type: "column", series: [{ values: "Sheet1!$B$2:$E$2", categories: "Sheet1!$B$1:$E$1", name: "Widget" }], title: "Quarterly Sales", cell: "A5" }
-   ```
-
-5. **Save**
-   ```
-   → save_workbook { workbook_id: "abc-123", file_path: "./quarterly_report.xlsx" }
-   ```
-
-## Workbook Store
-
-The server maintains an in-memory store of open workbooks:
-
-- **Capacity**: 10 concurrent workbooks (configurable)
-- **TTL**: 30-minute inactivity timeout — workbooks are automatically evicted
-- **Thread-safe**: Protected by `Arc<RwLock<WorkbookStore>>`
-
-Each `create_workbook` or `open_workbook` call returns a `workbook_id` handle. All subsequent operations reference this handle. Call `save_workbook` before the TTL expires to persist changes, and `close_workbook` to free memory.
-
-## Response Format
-
-All tools return structured JSON:
-
-```json
-{
-  "status": "success",
-  "message": "Descriptive message",
-  "data": { ... }
-}
 ```
+1. create_workbook {}
+   → { workbook_id: "abc-123", sheets: ["Sheet1"] }
 
-On error:
+2. write_row { workbook_id: "abc-123", sheet_name: "Sheet1",
+     start_cell: "A1", values: ["Product", "Q1", "Q2", "Q3", "Q4"] }
 
-```json
-{
-  "status": "error",
-  "category": "not_found",
-  "message": "Workbook not found",
-  "suggestion": "Check the workbook_id"
-}
-```
+3. write_row { ..., start_cell: "A2", values: ["Widget", 150, 200, 180, 220] }
 
-## Development
+4. set_cell_format { ..., range: "A1:E1", bold: true,
+     background_color: "#4472C4", font_color: "#FFFFFF" }
 
-To build from source:
+5. add_chart { ..., chart_type: "column",
+     series: [{ values: "Sheet1!$B$2:$E$2",
+                categories: "Sheet1!$B$1:$E$1", name: "Widget" }],
+     title: "Quarterly Sales", cell: "A5",
+     style: 26, show_data_table: true }
 
-```bash
-git clone https://github.com/zavora-ai/excel-mcp-server.git
-cd excel-mcp-server
-cargo build --release
-```
-
-The binary is at `target/release/excel-mcp-server`.
-
-```bash
-# Run tests
-cargo test
-
-# Lint
-cargo clippy
-
-# Format
-cargo fmt
+6. save_workbook { ..., file_path: "./quarterly_report.xlsx" }
 ```
 
 ## Architecture
 
 ```
 src/
-├── main.rs          # Entry point: stdio or HTTP transport selection
-├── server.rs        # MCP tool router — all 43 tools registered here
-├── store.rs         # In-memory workbook store with TTL eviction
-├── lib.rs           # Crate root
-├── error.rs         # Error types
-├── cell_ref.rs      # A1 notation parsing utilities
+├── main.rs            Entry point — stdio or HTTP transport
+├── server.rs          MCP tool router — 74 tools registered
+├── store.rs           In-memory workbook store with TTL eviction
+├── lib.rs             Crate root
+├── error.rs           Error types
+├── cell_ref.rs        A1 notation parsing
 ├── engines/
-│   └── zavora.rs    # zavora-xlsx engine adapter
+│   └── zavora.rs      zavora-xlsx engine adapter + recalculate
 ├── tools/
-│   ├── workbook.rs  # create, open, save, close
-│   ├── read.rs      # read_sheet, read_cell, search, CSV export
-│   ├── write.rs     # write_cells, write_row, write_column
-│   ├── format.rs    # set_cell_format, merge_cells
-│   ├── charts.rs    # Legacy chart support
-│   ├── tables.rs    # Excel Tables
-│   ├── conditional.rs # Conditional formatting
-│   ├── validation.rs  # Data validation
-│   ├── sparklines.rs  # Sparklines
-│   ├── images.rs    # Image embedding
-│   ├── layout.rs    # Freeze panes
-│   ├── sheets.rs    # Sheet management
-│   └── expanded.rs  # All remaining tools (pivot tables, shapes, charts, etc.)
+│   ├── workbook.rs    create, open, save, close
+│   ├── read.rs        read_sheet, read_cell, search, CSV
+│   ├── write.rs       write_cells, write_row, write_column
+│   ├── format.rs      set_cell_format, merge_cells
+│   ├── charts.rs      Basic chart support
+│   ├── tables.rs      Excel Tables
+│   ├── conditional.rs Conditional formatting
+│   ├── validation.rs  Data validation
+│   ├── sparklines.rs  Sparklines
+│   ├── images.rs      Image embedding
+│   ├── layout.rs      Freeze panes
+│   ├── sheets.rs      Sheet management
+│   └── expanded.rs    All advanced tools (charts, pivots, controls, etc.)
 └── types/
-    ├── inputs.rs    # Deserialized input structs for all tools
-    ├── enums.rs     # Shared enums (chart types, formats, etc.)
-    └── responses.rs # Structured JSON response builders
+    ├── inputs.rs      Input structs for all 74 tools
+    ├── enums.rs       Chart types, formats, validation rules
+    └── responses.rs   JSON response builders
+```
+
+### Workbook Store
+
+- **Capacity**: 10 concurrent workbooks
+- **TTL**: 30-minute inactivity timeout with automatic eviction
+- **Thread-safe**: `Arc<RwLock<WorkbookStore>>`
+- Every `create_workbook` or `open_workbook` returns a `workbook_id` handle
+- All operations reference this handle
+- `save_workbook` recalculates all formulas before writing
+
+### Response Format
+
+Success:
+```json
+{ "status": "success", "message": "...", "data": { ... } }
+```
+
+Error:
+```json
+{ "status": "error", "category": "not_found", "message": "...", "suggestion": "..." }
+```
+
+Error categories: `not_found`, `io_error`, `engine_unsupported`, `capacity_exceeded`
+
+## Development
+
+```bash
+git clone https://github.com/zavora-ai/excel-mcp-server.git
+cd excel-mcp-server
+cargo build --release    # Binary at target/release/excel-mcp-server
+cargo test               # Run all tests
+cargo clippy             # Lint
+cargo fmt                # Format
 ```
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE) for details.
+Apache 2.0 — see [LICENSE](LICENSE).
 
 Copyright 2025 Zavora Technologies Ltd.

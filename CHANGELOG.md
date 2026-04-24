@@ -2,46 +2,107 @@
 
 All notable changes to this project will be documented in this file.
 
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [0.2.0] - 2025-07-25
+
+Major release: full feature parity with zavora-xlsx 0.1.1. Tool count increased from 43 to 74.
 
 ### Critical Fix
 
-- **Formula recalculation**: `save_workbook` now calls `Workbook::recalculate()` before writing to disk. All formula cells are evaluated with dependency graph ordering, circular reference detection, and volatile function support. Previously, formula cells saved with cached value 0.
+- **Formula recalculation**: `save_workbook` and `save_workbook_advanced` now call `Workbook::recalculate()` before writing to disk. All formula cells are evaluated using a dependency graph with topological ordering, circular reference detection, and volatile function support (58 built-in functions: SUM, IF, VLOOKUP, XLOOKUP, INDEX, MATCH, and more). Previously, formula cells saved with cached value 0.
 
-### New Chart Types (4 tools)
+### New Chart Types (4 new tools)
 
-- `add_sunburst_chart` — hierarchical sunburst chart (Excel 2016+ ChartEx)
-- `add_histogram_chart` — histogram with optional bin_count, bin_width, and Pareto overlay
-- `add_box_whisker_chart` — box & whisker with outliers, mean markers, inner points
+- `add_sunburst_chart` — hierarchical sunburst chart (Excel 2016+ ChartEx) with levels and values
+- `add_histogram_chart` — histogram with bin_count, bin_width, and Pareto overlay option
+- `add_box_whisker_chart` — box & whisker with outlier, mean marker, and inner point toggles
 - `add_map_chart` — geographic map chart with country/region levels
 
-### Interactive Controls (3 tools)
+### Chart Enhancements (extended `add_chart`)
 
-- `add_slicer` — interactive filter for pivot tables
-- `add_timeline` — date filter for pivot tables
-- `add_form_control` — button, checkbox, dropdown, spinner form controls
+The existing `add_chart` tool now supports:
+- `show_data_table` — data table below chart
+- `view_3d` — 3D perspective rotation (rot_x, rot_y, perspective)
+- `style` — preset chart style number (1-48)
+- `alt_text` — accessibility title and description
+- `y_axis_min` / `y_axis_max` — axis bounds
+- `y_axis_log_base` — logarithmic scale
+- `x_axis_reverse` / `y_axis_reverse` — reverse axis direction
+- `x_axis_format` / `y_axis_format` — number format on axes
+- `drop_lines` / `high_low_lines` — line chart overlays
+- `plot_area_fill` — background fill color
 
-### Advanced Save/Open (2 tools)
+Per-series enhancements:
+- `line_width` — line thickness in points
+- `dash_style` — solid, dash, dot, dash_dot, long_dash, long_dash_dot
+- `gradient` — gradient fill with color stops
+- `bubble_sizes` — bubble chart size range
+- `error_bars` — fixed value, percentage, standard deviation, or standard error
 
-- `save_workbook_advanced` — save as template (.xltx), encrypted (password-protected), or parallel (fast compression)
-- `open_workbook_encrypted` — open password-protected workbooks
+### Pivot Table Enhancements (extended `add_pivot_table`)
 
-### Named Ranges (1 tool)
+- `calculated_fields` — custom formula fields in the pivot table
+- `date_groups` — group date fields by years, quarters, months, days, hours, minutes, seconds
+- `range_groups` — group numeric fields into ranges (start, end, interval)
+- `value_formats` — number format per value field
+- `subtotals` — toggle subtotals per field
+- `grand_total_rows` / `grand_total_cols` — toggle grand totals
+- `show_row_headers` / `show_column_headers` — toggle headers
+- `show_row_stripes` — banded rows
 
-- `manage_named_ranges` — full CRUD: add, add_scoped (sheet-level), update, remove, list with scope info
+### Interactive Controls (3 new tools)
 
-### Sheet Metadata (1 tool)
+- `add_slicer` — interactive filter connected to a pivot table field
+- `add_timeline` — date-based filter connected to a pivot table date field
+- `add_form_control` — button, checkbox, dropdown, or spinner with cell link support
 
-- `read_sheet_metadata` — read used_range, hyperlinks, merge_ranges, charts, or all at once
+### Threaded Comments (1 new tool)
 
-### Chart Sheet (1 tool)
+- `add_threaded_comment` — modern threaded comments with author, text, timestamp, and replies (replaces legacy notes for conversation-style commenting)
 
-- `add_chart_sheet` — dedicated chart-only sheet (no cells)
+### Protection Enhancements (1 new tool)
+
+- `protect_sheet_advanced` — granular sheet protection with per-feature allow/deny: insert_rows, delete_rows, insert_columns, delete_columns, format_cells, format_columns, format_rows, sort, insert_hyperlinks, select_locked_cells, select_unlocked_cells, pivot_tables
+
+### Advanced Save/Open (2 new tools)
+
+- `save_workbook_advanced` — save as template (.xltx), encrypted (password-protected), or with parallel compression. Formulas recalculated before save.
+- `open_workbook_encrypted` — open password-protected Excel workbooks
+
+### Named Ranges (1 new tool)
+
+- `manage_named_ranges` — full CRUD operations: add (workbook-scoped), add_scoped (sheet-scoped), update, remove, list with scope information
+
+### Read Enhancements (3 new tools)
+
+- `read_sheet_metadata` — read used_range, hyperlinks, merged ranges, embedded charts, or all at once
+- `read_cell_comment` — read a single cell's comment (author and text)
+- `read_cell_format` — read a cell's formatting properties
+
+### Document Properties (1 new tool)
+
+- `set_custom_property` — set custom document properties with typed values (text, number, integer, bool, datetime)
+
+### Workbook Features (4 new tools)
+
+- `add_chart_sheet` — dedicated chart-only sheet (no cells, full-page chart)
+- `manage_custom_xml` — add or read custom XML parts by namespace
+- `add_connection` — add external data connections
+- `set_sst_threshold` — tune shared string table threshold for write performance
+
+### Data Import (1 new tool)
+
+- `write_json_rows` — write JSON objects as spreadsheet rows with automatic header generation and type detection
 
 ### Changed
 
-- Upgraded zavora-xlsx dependency from 0.1.0 to 0.1.1 (adds `Workbook::recalculate()`)
-- Tool count increased from 43 to 56
+- Upgraded zavora-xlsx from 0.1.0 to 0.1.1 (adds `Workbook::recalculate()`)
+- Upgraded Rust edition from 2021 to 2024 (requires Rust 1.85+)
+- Updated repository URL to `zavora-ai/excel-mcp-server`
+- Rewrote README with comprehensive tool reference and architecture docs
+- Tool count: 43 → 74
 
 ## [0.1.1] - 2025-07-25
 
@@ -49,7 +110,7 @@ All notable changes to this project will be documented in this file.
 
 - Upgraded to Rust edition 2024 (requires Rust 1.85+)
 - Updated repository URL to `zavora-ai/excel-mcp-server`
-- Rewrote README to lead with `cargo install` instead of build-from-source instructions
+- Rewrote README to lead with `cargo install` instead of build-from-source
 - Updated minimum Rust version in docs from 1.75+ to 1.85+
 
 ### Added
@@ -58,100 +119,20 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.0] - 2025-07-25
 
-Initial public release of Excel MCP Server.
+Initial public release.
 
 ### Core
 
-- MCP server with **43 tools** for full Excel spreadsheet manipulation
-- **Two transports**: stdio (for CLI clients) and streamable HTTP (for web clients)
-- In-memory workbook store with 10-workbook capacity and 30-minute TTL eviction
+- MCP server with 43 tools for Excel spreadsheet manipulation
+- Two transports: stdio and streamable HTTP
+- In-memory workbook store with 10-workbook capacity and 30-minute TTL
 - Thread-safe architecture using `Arc<RwLock<WorkbookStore>>`
-- Built on [zavora-xlsx](https://github.com/zavora-ai/zavora-xlsx) for native xlsx read/write
-- Built on [rmcp](https://github.com/modelcontextprotocol/rust-sdk) for MCP protocol compliance
-- Rust edition 2024
+- Built on zavora-xlsx for native xlsx read/write
+- Built on rmcp for MCP protocol compliance
 
-### Workbook Lifecycle
+### Tools (43)
 
-- Create, open, save, and close xlsx workbooks
-- Configure calc mode, active sheet, and document properties
-
-### Sheet Management
-
-- List, add, rename, delete, and reorder worksheets
-- Get sheet dimensions and describe workbook structure
-
-### Reading
-
-- Read sheets with optional range selection and pagination
-- Read individual cells with value, type, and formula info
-- Search cells by value or pattern across sheets
-- Export sheets as CSV strings
-
-### Writing
-
-- Write to multiple cells with auto-detection of numbers, booleans, dates, and formulas
-- Write rows and columns from a starting cell
-- Write rich text with mixed bold/italic/color formatting runs
-- Write regular, array (CSE), and dynamic (Excel 365 spill) formulas
-
-### Formatting
-
-- Cell formatting: bold, italic, font/background colors, borders, number formats, alignment
-- Merge cells
-- Row and column formatting
-- Set column widths, row heights, and default dimensions
-
-### Layout
-
-- Freeze panes
-- Auto-fit column widths
-- Set active cell selection
-- Hide/unhide rows and columns
-- Sheet display settings: zoom, gridlines, tab color, right-to-left, hidden
-
-### Charts
-
-- 10 chart types: bar, column, line, pie, scatter, area, doughnut, waterfall, funnel, treemap
-- Multiple series per chart with trendlines and markers
-- Waterfall, funnel, and treemap via Excel 2016+ ChartEx format
-- Pivot table as chart data source
-
-### Tables & Data Features
-
-- Excel Tables with headers, autofilter, and styles
-- Conditional formatting: cell value rules, color scales, data bars, icon sets
-- Data validation: dropdowns, number/date ranges, custom formulas
-- Sparklines: line, column, and win/loss
-
-### Images & Shapes
-
-- Embed PNG and JPEG images
-- Drawing shapes: rectangle, ellipse, arrow, callout, text box with text, fill, and outline
-
-### Pivot Tables
-
-- Row, column, value, and filter fields
-- Multiple aggregation modes
-- Layout and style options
-
-### Other Features
-
-- Page setup and print configuration (landscape, paper size, margins, fit-to-page, headers/footers)
-- Cell comments and notes
-- Hyperlinks (external URLs and internal sheet references)
-- Named ranges (defined names)
-- Insert and delete rows and columns
-- Row and column grouping (outlines)
-- Sheet, workbook, and range protection
-- Autofilter with column filtering
-- Suppress Excel error indicators on ranges
-- Document properties (title, author, subject, description, keywords, category, company)
-
-### Publishing
-
-- Published to [crates.io](https://crates.io/crates/excel-mcp-server) as `excel-mcp-server`
-- Install with `cargo install excel-mcp-server`
-- Apache 2.0 license
+Workbook lifecycle (4), sheet management (7), reading (4), writing (4), formulas (1), cell operations (1), formatting (4), layout (5), charts — bar, column, line, pie, scatter, area, doughnut, waterfall, funnel, treemap (4), tables (1), conditional formatting (1), data validation (1), sparklines (1), images (1), shapes (1), pivot tables (1), page setup (1), comments (1), links (1), named ranges (1), row/column manipulation (2), grouping (1), protection (1), autofilter (1), error suppression (1), document properties (1).
 
 [0.2.0]: https://github.com/zavora-ai/excel-mcp-server/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/zavora-ai/excel-mcp-server/compare/v0.1.0...v0.1.1
