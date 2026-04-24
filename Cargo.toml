@@ -1,7 +1,7 @@
 [package]
 name = "excel-mcp-server"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["James Karanja Maina"]
 license = "Apache-2.0"
 description = "An MCP server that exposes Excel manipulation tools over stdio and streamable HTTP transports"

@@ -12,7 +12,7 @@ cargo install excel-mcp-server
 
 This compiles and installs the binary to `~/.cargo/bin/excel-mcp-server`.
 
-> Requires [Rust](https://rustup.rs/) 1.75+. If you don't have Rust, install it with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`.
+> Requires [Rust](https://rustup.rs/) 1.85+. If you don't have Rust, install it with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`.
 
 ## Client Configuration
 
