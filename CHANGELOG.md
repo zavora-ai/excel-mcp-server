@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2025-07-25
+
+### Changed
+
+- Upgraded to Rust edition 2024 (requires Rust 1.85+)
+- Updated repository URL to `zavora-ai/excel-mcp-server`
+- Rewrote README to lead with `cargo install` instead of build-from-source instructions
+- Updated minimum Rust version in docs from 1.75+ to 1.85+
+
+### Added
+
+- CHANGELOG.md
+
 ## [0.1.0] - 2025-07-25
 
 Initial public release of Excel MCP Server.
@@ -99,4 +112,5 @@ Initial public release of Excel MCP Server.
 - Install with `cargo install excel-mcp-server`
 - Apache 2.0 license
 
+[0.1.1]: https://github.com/zavora-ai/excel-mcp-server/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/zavora-ai/excel-mcp-server/releases/tag/v0.1.0
