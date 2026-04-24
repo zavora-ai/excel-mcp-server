@@ -710,6 +710,39 @@ pub struct ChartSeriesInput {
     /// Use secondary Y axis
     #[serde(default)]
     pub secondary_axis: Option<bool>,
+    /// Line width in points
+    #[serde(default)]
+    pub line_width: Option<f64>,
+    /// Dash style: "solid", "dash", "dot", "dash_dot", "long_dash", "long_dash_dot"
+    #[serde(default)]
+    pub dash_style: Option<String>,
+    /// Gradient stops: array of {color, position}
+    #[serde(default)]
+    pub gradient: Option<Vec<GradientStopInput>>,
+    /// Bubble sizes range (for bubble charts)
+    #[serde(default)]
+    pub bubble_sizes: Option<String>,
+    /// Error bar configuration
+    #[serde(default)]
+    pub error_bars: Option<ErrorBarInput>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct ErrorBarInput {
+    /// "both", "plus", "minus"
+    #[serde(default = "default_both")]
+    pub bar_type: String,
+    /// "fixed", "percentage", "std_dev", "std_error"
+    #[serde(default = "default_fixed")]
+    pub value_type: String,
+    pub value: f64,
+}
+
+fn default_both() -> String {
+    "both".to_string()
+}
+fn default_fixed() -> String {
+    "fixed".to_string()
 }
 
 /// Pivot chart source
@@ -750,6 +783,48 @@ pub struct AddChartEnhancedInput {
     /// Link chart to a pivot table
     #[serde(default)]
     pub pivot_source: Option<PivotChartSourceInput>,
+    /// Show data table below chart
+    #[serde(default)]
+    pub show_data_table: Option<bool>,
+    /// 3D perspective: rot_x, rot_y, perspective
+    #[serde(default)]
+    pub view_3d: Option<View3DInput>,
+    /// Preset chart style number (1-48)
+    #[serde(default)]
+    pub style: Option<u8>,
+    /// Accessibility alt text
+    #[serde(default)]
+    pub alt_text: Option<AltTextInput>,
+    /// Y-axis minimum value
+    #[serde(default)]
+    pub y_axis_min: Option<f64>,
+    /// Y-axis maximum value
+    #[serde(default)]
+    pub y_axis_max: Option<f64>,
+    /// Y-axis logarithmic base (e.g. 10)
+    #[serde(default)]
+    pub y_axis_log_base: Option<f64>,
+    /// Reverse X axis direction
+    #[serde(default)]
+    pub x_axis_reverse: Option<bool>,
+    /// Reverse Y axis direction
+    #[serde(default)]
+    pub y_axis_reverse: Option<bool>,
+    /// X-axis number format string
+    #[serde(default)]
+    pub x_axis_format: Option<String>,
+    /// Y-axis number format string
+    #[serde(default)]
+    pub y_axis_format: Option<String>,
+    /// Show drop lines
+    #[serde(default)]
+    pub drop_lines: Option<bool>,
+    /// Show high-low lines
+    #[serde(default)]
+    pub high_low_lines: Option<bool>,
+    /// Plot area background fill color (hex)
+    #[serde(default)]
+    pub plot_area_fill: Option<String>,
 }
 
 /// Pivot table value field
@@ -789,6 +864,36 @@ pub struct AddPivotTableInput {
     /// Layout: compact, outline, tabular. Default: compact
     #[serde(default)]
     pub layout: Option<String>,
+    /// Calculated fields to add
+    #[serde(default)]
+    pub calculated_fields: Vec<PivotCalculatedFieldInput>,
+    /// Date grouping for fields
+    #[serde(default)]
+    pub date_groups: Vec<PivotDateGroupInput>,
+    /// Numeric range grouping for fields
+    #[serde(default)]
+    pub range_groups: Vec<PivotRangeGroupInput>,
+    /// Number format for value fields
+    #[serde(default)]
+    pub value_formats: Vec<PivotValueFormatInput>,
+    /// Toggle subtotals per field
+    #[serde(default)]
+    pub subtotals: Vec<PivotSubtotalToggle>,
+    /// Show grand totals for rows
+    #[serde(default)]
+    pub grand_total_rows: Option<bool>,
+    /// Show grand totals for columns
+    #[serde(default)]
+    pub grand_total_cols: Option<bool>,
+    /// Show row headers
+    #[serde(default)]
+    pub show_row_headers: Option<bool>,
+    /// Show column headers
+    #[serde(default)]
+    pub show_column_headers: Option<bool>,
+    /// Show row stripes
+    #[serde(default)]
+    pub show_row_stripes: Option<bool>,
 }
 
 /// Input for reading comments from a sheet
@@ -1810,4 +1915,130 @@ pub struct SheetProtectionOptionsInput {
     pub select_unlocked_cells: Option<bool>,
     #[serde(default)]
     pub pivot_tables: Option<bool>,
+}
+
+// ══════════════════════════════════════════════════════════════════
+// v0.2.1: Chart enhancements, pivot enhancements, threaded comments,
+// granular protection, custom properties
+// ══════════════════════════════════════════════════════════════════
+
+/// Input for adding a threaded comment (modern Excel comments with replies)
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AddThreadedCommentInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub cell: String,
+    pub author: String,
+    pub text: String,
+    #[serde(default)]
+    pub timestamp: Option<String>,
+    /// Optional replies to add immediately
+    #[serde(default)]
+    pub replies: Vec<ThreadedReplyInput>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct ThreadedReplyInput {
+    pub author: String,
+    pub text: String,
+    #[serde(default)]
+    pub timestamp: Option<String>,
+}
+
+/// Input for protecting a sheet with granular options
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ProtectSheetAdvancedInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    #[serde(default)]
+    pub password: Option<String>,
+    /// Allow inserting rows (default: locked)
+    #[serde(default)]
+    pub allow_insert_rows: Option<bool>,
+    /// Allow deleting rows
+    #[serde(default)]
+    pub allow_delete_rows: Option<bool>,
+    /// Allow inserting columns
+    #[serde(default)]
+    pub allow_insert_columns: Option<bool>,
+    /// Allow deleting columns
+    #[serde(default)]
+    pub allow_delete_columns: Option<bool>,
+    /// Allow formatting cells
+    #[serde(default)]
+    pub allow_format_cells: Option<bool>,
+    /// Allow formatting columns
+    #[serde(default)]
+    pub allow_format_columns: Option<bool>,
+    /// Allow formatting rows
+    #[serde(default)]
+    pub allow_format_rows: Option<bool>,
+    /// Allow sorting
+    #[serde(default)]
+    pub allow_sort: Option<bool>,
+    /// Allow inserting hyperlinks
+    #[serde(default)]
+    pub allow_insert_hyperlinks: Option<bool>,
+    /// Allow selecting locked cells
+    #[serde(default)]
+    pub allow_select_locked_cells: Option<bool>,
+    /// Allow selecting unlocked cells
+    #[serde(default)]
+    pub allow_select_unlocked_cells: Option<bool>,
+    /// Allow pivot tables
+    #[serde(default)]
+    pub allow_pivot_tables: Option<bool>,
+}
+
+/// Input for setting custom document properties
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SetCustomPropertyInput {
+    pub workbook_id: String,
+    pub name: String,
+    /// Value to set. Use value_type to control the type.
+    pub value: String,
+    /// "text" (default), "number", "integer", "bool", "datetime"
+    #[serde(default = "default_text")]
+    pub value_type: String,
+}
+
+fn default_text() -> String {
+    "text".to_string()
+}
+
+/// Pivot table enhancement fields
+#[derive(Deserialize, JsonSchema)]
+pub struct PivotCalculatedFieldInput {
+    pub name: String,
+    pub formula: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct PivotDateGroupInput {
+    pub field: String,
+    /// Levels: "years", "quarters", "months", "days", "hours", "minutes", "seconds"
+    pub levels: Vec<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct PivotRangeGroupInput {
+    pub field: String,
+    pub start: f64,
+    pub end: f64,
+    pub interval: f64,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct PivotValueFormatInput {
+    pub field: String,
+    pub format: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct PivotSubtotalToggle {
+    pub field: String,
+    pub show: bool,
 }

@@ -495,6 +495,73 @@ pub fn add_chart_enhanced(
     if let Some(ref ps) = input.pivot_source {
         chart.set_pivot_source(&ps.pivot_table, &ps.sheet);
     }
+    // Chart enhancements
+    if input.show_data_table == Some(true) {
+        chart.show_data_table(true);
+    }
+    if let Some(ref v) = input.view_3d {
+        let mut view = zavora_xlsx::View3D::default();
+        if let Some(rx) = v.rot_x {
+            view.rot_x = rx;
+        }
+        if let Some(ry) = v.rot_y {
+            view.rot_y = ry;
+        }
+        if let Some(p) = v.perspective {
+            view.perspective = p;
+        }
+        chart.set_view3d(view);
+    }
+    if let Some(s) = input.style {
+        chart.set_style(s);
+    }
+    if let Some(ref at) = input.alt_text {
+        chart.set_alt_text(&at.title, &at.description);
+    }
+    if let Some(v) = input.y_axis_min {
+        chart.set_y_axis_min(v);
+    }
+    if let Some(v) = input.y_axis_max {
+        chart.set_y_axis_max(v);
+    }
+    if let Some(v) = input.y_axis_log_base {
+        chart.set_y_axis_log_base(v);
+    }
+    if input.x_axis_reverse == Some(true) {
+        chart.set_x_axis_reverse();
+    }
+    if input.y_axis_reverse == Some(true) {
+        chart.set_y_axis_reverse();
+    }
+    if let Some(ref fmt) = input.x_axis_format {
+        let af = zavora_xlsx::AxisFormat {
+            num_format: Some(fmt.clone()),
+            ..Default::default()
+        };
+        chart.set_x_axis_format(af);
+    }
+    if let Some(ref fmt) = input.y_axis_format {
+        let af = zavora_xlsx::AxisFormat {
+            num_format: Some(fmt.clone()),
+            ..Default::default()
+        };
+        chart.set_y_axis_format(af);
+    }
+    if input.drop_lines == Some(true) {
+        chart.set_drop_lines(true);
+    }
+    if input.high_low_lines == Some(true) {
+        chart.set_high_low_lines(true);
+    }
+    if let Some(ref fill) = input.plot_area_fill {
+        let rgb = parse_hex_color(fill);
+        let paf = zavora_xlsx::PlotAreaFormat {
+            fill: Some(rgb),
+            border: None,
+            gradient: None,
+        };
+        chart.set_plot_area_format(paf);
+    }
     // Add series
     if !input.series.is_empty() {
         for si in &input.series {
@@ -533,6 +600,44 @@ pub fn add_chart_enhanced(
                     _ => zavora_xlsx::MarkerType::None,
                 };
                 s.set_marker(mt);
+            }
+            if let Some(lw) = si.line_width {
+                s.set_line_width(lw);
+            }
+            if let Some(ref ds) = si.dash_style {
+                let style = match ds.as_str() {
+                    "dash" => zavora_xlsx::DashStyle::Dash,
+                    "dot" => zavora_xlsx::DashStyle::Dot,
+                    "dash_dot" => zavora_xlsx::DashStyle::DashDot,
+                    "long_dash" => zavora_xlsx::DashStyle::LongDash,
+                    "long_dash_dot" => zavora_xlsx::DashStyle::LongDashDot,
+                    _ => zavora_xlsx::DashStyle::Solid,
+                };
+                s.set_dash_style(style);
+            }
+            if let Some(ref g) = si.gradient {
+                let stops: Vec<([u8; 3], f64)> = g
+                    .iter()
+                    .map(|gs| (parse_hex_color(&gs.color), gs.position))
+                    .collect();
+                s.set_gradient(stops);
+            }
+            if let Some(ref bs) = si.bubble_sizes {
+                s.set_bubble_sizes(bs);
+            }
+            if let Some(ref eb) = si.error_bars {
+                let bt = match eb.bar_type.as_str() {
+                    "plus" => zavora_xlsx::ErrorBarType::Plus,
+                    "minus" => zavora_xlsx::ErrorBarType::Minus,
+                    _ => zavora_xlsx::ErrorBarType::Both,
+                };
+                let vt = match eb.value_type.as_str() {
+                    "percentage" => zavora_xlsx::ErrorBarValueType::Percentage,
+                    "std_dev" => zavora_xlsx::ErrorBarValueType::StandardDeviation,
+                    "std_error" => zavora_xlsx::ErrorBarValueType::StandardError,
+                    _ => zavora_xlsx::ErrorBarValueType::FixedValue,
+                };
+                s.set_error_bars(zavora_xlsx::ErrorBar::new(bt, vt, eb.value));
             }
         }
     } else if let Some(ref dr) = input.data_range {
@@ -597,6 +702,52 @@ pub fn add_pivot_table(
             _ => zavora_xlsx::PivotLayout::Compact,
         };
         pt = pt.set_layout(layout);
+    }
+    // Pivot enhancements
+    for cf in &input.calculated_fields {
+        pt = pt.add_calculated_field(&cf.name, &cf.formula);
+    }
+    for dg in &input.date_groups {
+        let levels: Vec<zavora_xlsx::DateGroupLevel> = dg
+            .levels
+            .iter()
+            .map(|l| match l.as_str() {
+                "years" => zavora_xlsx::DateGroupLevel::Years,
+                "quarters" => zavora_xlsx::DateGroupLevel::Quarters,
+                "months" => zavora_xlsx::DateGroupLevel::Months,
+                "days" => zavora_xlsx::DateGroupLevel::Days,
+                "hours" => zavora_xlsx::DateGroupLevel::Hours,
+                "minutes" => zavora_xlsx::DateGroupLevel::Minutes,
+                "seconds" => zavora_xlsx::DateGroupLevel::Seconds,
+                _ => zavora_xlsx::DateGroupLevel::Months,
+            })
+            .collect();
+        pt = pt.group_by_date(&dg.field, &levels);
+    }
+    for rg in &input.range_groups {
+        pt = pt.group_by_range(&rg.field, rg.start, rg.end, rg.interval);
+    }
+    for vf in &input.value_formats {
+        pt = pt.set_value_format(&vf.field, &vf.format);
+    }
+    for st in &input.subtotals {
+        pt = pt.show_subtotals(&st.field, st.show);
+    }
+    if let (Some(rows), Some(cols)) = (input.grand_total_rows, input.grand_total_cols) {
+        pt = pt.show_grand_totals(rows, cols);
+    } else if let Some(rows) = input.grand_total_rows {
+        pt = pt.show_grand_totals(rows, true);
+    } else if let Some(cols) = input.grand_total_cols {
+        pt = pt.show_grand_totals(true, cols);
+    }
+    if let Some(v) = input.show_row_headers {
+        pt = pt.show_row_headers(v);
+    }
+    if let Some(v) = input.show_column_headers {
+        pt = pt.show_column_headers(v);
+    }
+    if let Some(v) = input.show_row_stripes {
+        pt = pt.show_row_stripes(v);
     }
     let (row, col) = if let Some(ref c) = input.cell {
         zavora_xlsx::utility::parse_cell_ref(c).map_err(|e| anyhow::anyhow!("{e}"))?
@@ -2624,5 +2775,148 @@ pub fn add_chart_sheet(
     Ok(success_no_data(&format!(
         "Chart sheet '{}' added",
         input.sheet_name
+    )))
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// v0.2.1: Threaded comments, granular protection, custom properties
+// ══════════════════════════════════════════════════════════════════
+
+pub fn add_threaded_comment(
+    store: &mut WorkbookStore,
+    input: AddThreadedCommentInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let (row, col) =
+        zavora_xlsx::utility::parse_cell_ref(&input.cell).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let mut tc = zavora_xlsx::ThreadedComment::new(&input.author, &input.text);
+    if let Some(ref ts) = input.timestamp {
+        tc = tc.timestamp(ts);
+    }
+    for reply in &input.replies {
+        if let Some(ref ts) = reply.timestamp {
+            tc.add_reply_with_timestamp(&reply.author, &reply.text, ts);
+        } else {
+            tc.add_reply(&reply.author, &reply.text);
+        }
+    }
+    entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .add_threaded_comment(row, col, tc);
+    Ok(success_no_data(&format!(
+        "Threaded comment added at {}",
+        input.cell
+    )))
+}
+
+pub fn protect_sheet_advanced(
+    store: &mut WorkbookStore,
+    input: ProtectSheetAdvancedInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let idx = match find_sheet(&entry.data, &input.sheet_name) {
+        Some(i) => i,
+        None => return Ok(sheet_err(&input.sheet_name)),
+    };
+    let ws = entry
+        .data
+        .worksheet(idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+
+    if let Some(ref pw) = input.password {
+        ws.protect_with_password(pw);
+    }
+
+    // Build SheetProtection with granular options
+    // Default: everything locked (true = locked)
+    let mut prot = zavora_xlsx::SheetProtection::default();
+
+    // "allow" means NOT locked, so we invert: allow=true -> field=false
+    if let Some(v) = input.allow_insert_rows {
+        prot.insert_rows = !v;
+    }
+    if let Some(v) = input.allow_delete_rows {
+        prot.delete_rows = !v;
+    }
+    if let Some(v) = input.allow_insert_columns {
+        prot.insert_columns = !v;
+    }
+    if let Some(v) = input.allow_delete_columns {
+        prot.delete_columns = !v;
+    }
+    if let Some(v) = input.allow_format_cells {
+        prot.format_cells = !v;
+    }
+    if let Some(v) = input.allow_format_columns {
+        prot.format_columns = !v;
+    }
+    if let Some(v) = input.allow_format_rows {
+        prot.format_rows = !v;
+    }
+    if let Some(v) = input.allow_sort {
+        prot.sort = !v;
+    }
+    if let Some(v) = input.allow_insert_hyperlinks {
+        prot.insert_hyperlinks = !v;
+    }
+    if let Some(v) = input.allow_select_locked_cells {
+        prot.select_locked_cells = !v;
+    }
+    if let Some(v) = input.allow_select_unlocked_cells {
+        prot.select_unlocked_cells = !v;
+    }
+    if let Some(v) = input.allow_pivot_tables {
+        prot.pivot_tables = !v;
+    }
+
+    ws.protect_with_options(prot);
+
+    Ok(success_no_data(&format!(
+        "Sheet '{}' protected with custom options",
+        input.sheet_name
+    )))
+}
+
+pub fn set_custom_property(
+    store: &mut WorkbookStore,
+    input: SetCustomPropertyInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+    let val = match input.value_type.as_str() {
+        "number" => {
+            let n: f64 = input.value.parse().unwrap_or(0.0);
+            zavora_xlsx::CustomPropertyValue::Number(n)
+        }
+        "integer" => {
+            let n: i32 = input.value.parse().unwrap_or(0);
+            zavora_xlsx::CustomPropertyValue::Integer(n)
+        }
+        "bool" => {
+            let b = input.value == "true" || input.value == "1";
+            zavora_xlsx::CustomPropertyValue::Bool(b)
+        }
+        "datetime" => zavora_xlsx::CustomPropertyValue::DateTime(input.value.clone()),
+        _ => zavora_xlsx::CustomPropertyValue::Text(input.value.clone()),
+    };
+    entry.data.set_custom_property(&input.name, val);
+    Ok(success_no_data(&format!(
+        "Custom property '{}' set",
+        input.name
     )))
 }

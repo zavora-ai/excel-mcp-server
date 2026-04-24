@@ -569,21 +569,60 @@ impl ExcelMcpServer {
     async fn add_chart_sheet(&self, Parameters(i): Parameters<AddChartSheetInput>) -> String {
         tool_fn!(self.store, tools::expanded::add_chart_sheet, i)
     }
+
+    // ── Threaded comments (1) ──
+
+    #[tool(
+        description = "Add a modern threaded comment with author, text, optional timestamp, and replies. Unlike legacy comments, these support conversation threads."
+    )]
+    async fn add_threaded_comment(
+        &self,
+        Parameters(i): Parameters<AddThreadedCommentInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::add_threaded_comment, i)
+    }
+
+    // ── Granular protection (1) ──
+
+    #[tool(
+        description = "Protect a sheet with granular options: allow_insert_rows, allow_delete_rows, allow_format_cells, allow_sort, etc. Optional password."
+    )]
+    async fn protect_sheet_advanced(
+        &self,
+        Parameters(i): Parameters<ProtectSheetAdvancedInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::protect_sheet_advanced, i)
+    }
+
+    // ── Custom properties (1) ──
+
+    #[tool(
+        description = "Set a custom document property. value_type: 'text' (default), 'number', 'integer', 'bool', 'datetime'."
+    )]
+    async fn set_custom_property(
+        &self,
+        Parameters(i): Parameters<SetCustomPropertyInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::expanded::set_custom_property, i)
+    }
 }
 
 #[tool_handler]
 impl ServerHandler for ExcelMcpServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build()).with_instructions(
-            "Excel file manipulation server powered by zavora-xlsx. 56 tools covering: \
+            "Excel file manipulation server powered by zavora-xlsx. 59 tools covering: \
                  workbook lifecycle, sheet management, cell reading/writing, formatting, \
-                 charts (11 types + pivot charts + waterfall/funnel/treemap/sunburst/histogram/box-whisker/map), \
+                 charts (11 types + pivot charts + waterfall/funnel/treemap/sunburst/histogram/box-whisker/map \
+                 with data tables, 3D views, error bars, axis formatting, drop/high-low lines, gradients), \
                  images, shapes, tables, conditional formatting, data validation, sparklines, \
-                 pivot tables, slicers, timelines, form controls, page setup, comments, hyperlinks, \
-                 named ranges (CRUD with scoping), row/column manipulation, grouping, protection, \
-                 autofilter, formulas (regular/array/dynamic with recalculation), rich text, \
-                 document properties, sheet metadata, chart sheets, encrypted open/save, \
-                 template save, parallel save, and CSV export."
+                 pivot tables (calculated fields, date/range grouping, subtotals, grand totals, value formats), \
+                 slicers, timelines, form controls, threaded comments, page setup, hyperlinks, \
+                 named ranges (CRUD with scoping), row/column manipulation, grouping, \
+                 protection (basic + granular with per-feature allow/deny), autofilter, \
+                 formulas (regular/array/dynamic with recalculation), rich text, \
+                 document properties, custom properties, sheet metadata, chart sheets, \
+                 encrypted open/save, template save, parallel save, and CSV export."
                 .to_string(),
         )
     }
