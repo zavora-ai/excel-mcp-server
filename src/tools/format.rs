@@ -15,8 +15,7 @@ pub fn set_cell_format(
         Some(i) => i,
         None => return Ok(sheet_err(&input.sheet_name)),
     };
-    let (r1, c1, r2, c2) =
-        zavora_xlsx::utility::parse_range_ref(&input.range).map_err(|e| anyhow::anyhow!("{e}"))?;
+    // Build format first (before range parsing)
     let mut fmt = zavora_xlsx::Format::new();
     if input.bold == Some(true) {
         fmt = fmt.bold();
@@ -72,8 +71,15 @@ pub fn set_cell_format(
         .data
         .worksheet(idx)
         .map_err(|e| anyhow::anyhow!("{e}"))?;
-    ws.set_range_format(r1, c1, r2, c2, &fmt)
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    // Support comma-separated ranges: "A1:B5,D1:E5,G1:H5"
+    let ranges: Vec<&str> = input.range.split(',').map(|r| r.trim()).collect();
+    for range_str in &ranges {
+        let (r1, c1, r2, c2) =
+            zavora_xlsx::utility::parse_range_ref(range_str)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+        ws.set_range_format(r1, c1, r2, c2, &fmt)
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
     Ok(success_no_data(&format!(
         "Format applied to {}",
         input.range
