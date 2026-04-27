@@ -1327,6 +1327,10 @@ pub struct SetDimensionsInput {
     #[serde(default)]
     pub row: Option<u32>,
     pub value: f64,
+    /// Optional comma-separated range (e.g. "A1:B5,D1:E5") to apply dimensions
+    /// to all rows/columns within each range segment.
+    #[serde(default)]
+    pub range: Option<String>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -2111,4 +2115,288 @@ pub struct WriteJsonRowsInput {
     pub write_headers: bool,
     /// Array of objects — keys become headers, values become cells
     pub rows: Vec<serde_json::Value>,
+}
+
+// ══════════════════════════════════════════════════════════════════
+// High-level operations — Tier 1: Styler Agent
+// ══════════════════════════════════════════════════════════════════
+
+/// A single formatting operation for batch_format
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct FormatOperation {
+    /// Range in A1:B2 notation (supports comma-separated multi-range)
+    pub range: String,
+    #[serde(default)]
+    pub bold: Option<bool>,
+    #[serde(default)]
+    pub italic: Option<bool>,
+    #[serde(default)]
+    pub underline: Option<bool>,
+    #[serde(default)]
+    pub font_size: Option<f64>,
+    #[serde(default)]
+    pub font_color: Option<String>,
+    #[serde(default)]
+    pub background_color: Option<String>,
+    /// Excel number format string or semantic name ("currency", "percentage", etc.)
+    #[serde(default)]
+    pub number_format: Option<String>,
+    #[serde(default)]
+    pub horizontal_alignment: Option<HorizontalAlignment>,
+    #[serde(default)]
+    pub vertical_alignment: Option<VerticalAlignment>,
+    /// Border style enum or preset name ("bottom_thick", "box", "top_bottom", etc.)
+    #[serde(default)]
+    pub border_style: Option<BorderStyle>,
+}
+
+/// Input for batch_format: apply multiple formatting operations in one call
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct BatchFormatInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Array of formatting operations to apply sequentially
+    pub operations: Vec<FormatOperation>,
+}
+
+/// Input for apply_theme: apply a complete professional theme to a sheet
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ApplyThemeInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Theme name: "financial_professional", "corporate", "minimal"
+    pub theme: String,
+    /// Row numbers (1-based) to style as headers
+    #[serde(default)]
+    pub header_rows: Vec<u32>,
+    /// Row numbers (1-based) to style as totals
+    #[serde(default)]
+    pub total_rows: Vec<u32>,
+    /// If true, auto-detect numeric columns and apply currency format. Default: false.
+    /// Use with caution — columns of years or IDs will be incorrectly formatted.
+    #[serde(default)]
+    pub auto_detect_formats: bool,
+}
+
+/// Input for copy_format: copy formatting from source to target ranges
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CopyFormatInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Source range to copy formatting from (A1:B2 notation)
+    pub source_range: String,
+    /// Target ranges to apply formatting to (comma-separated A1:B2 notation)
+    pub target_ranges: Vec<String>,
+}
+
+/// Input for apply_style: apply a named style preset to a range
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ApplyStyleInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Range in A1:B2 notation (supports comma-separated)
+    pub range: String,
+    /// Style preset: "header", "title", "currency", "percentage", "date",
+    /// "number", "text", "accounting", "total"
+    pub style: String,
+}
+
+/// Input for format_as_table_header: format a row as a table header
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct FormatAsTableHeaderInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Row number to format as header (1-based). Default: 1
+    #[serde(default)]
+    pub header_row: Option<u32>,
+    /// Override header background color (hex). Default: "#4472C4"
+    #[serde(default)]
+    pub background_color: Option<String>,
+    /// Override header font color (hex). Default: "#FFFFFF"
+    #[serde(default)]
+    pub font_color: Option<String>,
+}
+
+/// Input for format_as_table_range: apply table-like formatting to a range
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct FormatAsTableRangeInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Range in A1:B2 notation
+    pub range: String,
+    /// Color scheme: "blue" (default), "green", "gray", "orange"
+    #[serde(default)]
+    pub style: Option<String>,
+}
+
+/// Input for describe_formatting: read formatting from a range
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct DescribeFormattingInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    /// Range in A1:B2 notation
+    pub range: String,
+}
+
+// ── Tier 2: Writer Agent inputs ────────────────────────────────────
+
+/// Input for write_grid: write a 2D block of data
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WriteGridInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub start_cell: String,
+    pub rows: Vec<Vec<serde_json::Value>>,
+}
+
+/// Input for write_row_range: write a formula and fill rightward
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WriteRowRangeInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub start_cell: String,
+    pub end_column: String,
+    pub formula: String,
+}
+
+/// Input for clone_column_formulas: copy formulas from one column to others
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CloneColumnFormulasInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub source_column: String,
+    pub target_columns: Vec<String>,
+    pub start_row: u32,
+    pub end_row: u32,
+}
+
+// ── Tier 3: Data Operations inputs ─────────────────────────────────
+
+/// A sort key specifying column and direction
+#[derive(Deserialize, JsonSchema)]
+pub struct SortKey {
+    pub column: String,
+    #[serde(default)]
+    pub direction: Option<SortDirection>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SortRangeInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub range: String,
+    pub sort_keys: Vec<SortKey>,
+    #[serde(default)]
+    pub has_header: bool,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct FindReplaceInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub find: String,
+    pub replace: String,
+    #[serde(default)]
+    pub range: Option<String>,
+    #[serde(default = "default_true")]
+    pub match_case: bool,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct FillSeriesInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub source_range: String,
+    pub fill_count: u32,
+    #[serde(default)]
+    pub direction: Option<FillDirection>,
+    #[serde(default)]
+    pub fill_type: Option<FillType>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct RowCondition {
+    pub column: String,
+    pub operator: ConditionOperator,
+    #[serde(default)]
+    pub value: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct DeleteRowsWhereInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub condition: RowCondition,
+    #[serde(default)]
+    pub has_header: bool,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CopySheetInput {
+    pub workbook_id: String,
+    pub source_sheet: String,
+    pub new_sheet_name: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CopyRangeInput {
+    pub workbook_id: String,
+    pub source_sheet: String,
+    pub source_range: String,
+    #[serde(default)]
+    pub destination_sheet: Option<String>,
+    pub destination_cell: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct TransposeRangeInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub source_range: String,
+    #[serde(default)]
+    pub destination_cell: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RemoveDuplicatesInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub range: String,
+    #[serde(default)]
+    pub columns: Vec<String>,
+    #[serde(default)]
+    pub has_header: bool,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SplitColumnInput {
+    pub workbook_id: String,
+    pub sheet_name: String,
+    pub column: String,
+    pub start_row: u32,
+    pub end_row: u32,
+    #[serde(default = "default_comma")]
+    pub delimiter: String,
+    #[serde(default)]
+    pub has_header: bool,
 }

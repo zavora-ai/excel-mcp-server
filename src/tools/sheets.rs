@@ -193,6 +193,100 @@ pub fn delete_sheet(
     )))
 }
 
+pub fn copy_sheet(
+    store: &mut WorkbookStore,
+    input: CopySheetInput,
+) -> Result<String, anyhow::Error> {
+    let entry = match store.get_mut(&input.workbook_id) {
+        Some(e) => e,
+        None => return Ok(workbook_not_found(store, &input.workbook_id)),
+    };
+
+    // Check source exists
+    let src_idx = match find_sheet_index(&entry.data, &input.source_sheet) {
+        Some(i) => i,
+        None => {
+            return Ok(error(
+                ErrorCategory::NotFound,
+                &format!("Sheet '{}' not found", input.source_sheet),
+                "Check sheet name.",
+            ))
+        }
+    };
+
+    // Check new name doesn't already exist
+    if find_sheet_index(&entry.data, &input.new_sheet_name).is_some() {
+        return Ok(error(
+            ErrorCategory::InvalidInput,
+            &format!("Sheet '{}' already exists", input.new_sheet_name),
+            "Choose a different name for the copy.",
+        ));
+    }
+
+    // Read all data from source sheet
+    let src_ws = entry
+        .data
+        .worksheet_ref(src_idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+
+    let used = src_ws.used_range();
+
+    // Collect all cell values from source
+    let mut cells: Vec<(u32, u16, zavora_xlsx::CellValue)> = Vec::new();
+    if let Some((r1, c1, r2, c2)) = used {
+        for r in r1..=r2 {
+            for c in c1..=c2 {
+                let val = src_ws.read_cell(r, c);
+                if !matches!(val, zavora_xlsx::CellValue::Empty) {
+                    cells.push((r, c, val));
+                }
+            }
+        }
+    }
+
+    // Create new sheet
+    entry
+        .data
+        .add_worksheet_with_name(&input.new_sheet_name)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+
+    let new_idx = find_sheet_index(&entry.data, &input.new_sheet_name).unwrap();
+    let new_ws = entry
+        .data
+        .worksheet(new_idx)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+
+    // Write all values to new sheet
+    for (r, c, val) in &cells {
+        match val {
+            zavora_xlsx::CellValue::String(s) => {
+                let _ = new_ws.write(*r, *c, s.as_str());
+            }
+            zavora_xlsx::CellValue::Number(n) => {
+                let _ = new_ws.write(*r, *c, *n);
+            }
+            zavora_xlsx::CellValue::Bool(b) => {
+                let _ = new_ws.write(*r, *c, *b);
+            }
+            zavora_xlsx::CellValue::DateTime(dt) => {
+                let _ = new_ws.write(*r, *c, dt.clone());
+            }
+            zavora_xlsx::CellValue::Formula { formula, .. } => {
+                let _ = new_ws.write_formula(*r, *c, formula);
+            }
+            zavora_xlsx::CellValue::RichText(rt) => {
+                let _ = new_ws.write(*r, *c, rt.plain_text().as_str());
+            }
+            _ => {}
+        }
+    }
+
+    Ok(success_no_data(&format!(
+        "Sheet '{}' copied to '{}'",
+        input.source_sheet, input.new_sheet_name
+    )))
+}
+
 fn find_sheet_index(wb: &zavora_xlsx::Workbook, name: &str) -> Option<usize> {
     wb.sheet_names().iter().position(|n| *n == name)
 }

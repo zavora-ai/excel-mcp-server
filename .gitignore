@@ -27,3 +27,6 @@ Thumbs.db
 
 # Artifacts directory (runtime generated files)
 /artifacts/
+
+# Example output directory
+/output/
