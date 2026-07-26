@@ -28,3 +28,12 @@ uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
 proptest = "1"
+
+# Development arrangement, not a release one.
+#
+# The published 0.1.1 silently discards a write to a cell that already had a value: the
+# parsed original clobbers the authored write when the sheet is serialised, so "change this
+# number" reported success and changed nothing. Fixed in the checkout beside this one; this
+# points at it until a version carrying the fix is released.
+[patch.crates-io]
+zavora-xlsx = { path = "../../zavora-xlsx" }

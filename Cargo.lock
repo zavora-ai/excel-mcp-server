@@ -1804,8 +1804,6 @@ dependencies = [
 [[package]]
 name = "zavora-xlsx"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e71353f23fd0cc78df4fdfb53b71cfe5c99b2122d64ea47cce582ff50e50facc"
 dependencies = [
  "atoi_simd",
  "fast-float2",
