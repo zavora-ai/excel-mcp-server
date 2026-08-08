@@ -12,7 +12,7 @@ cargo install excel-mcp-server
 
 This compiles and installs the binary to `~/.cargo/bin/excel-mcp-server`.
 
-> Requires [Rust](https://rustup.rs/) 1.85+. If you don't have Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+> Requires [Rust](https://rustup.rs/) 1.88+. If you don't have Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 
 ## Client Configuration
 
@@ -387,3 +387,7 @@ cargo fmt                # Format
 Apache 2.0 — see [LICENSE](LICENSE).
 
 Copyright 2025 Zavora Technologies Ltd.
+
+## rmcp and MCP compatibility
+
+This server is built with [`rmcp` 3.1.2](https://github.com/modelcontextprotocol/rust-sdk/releases/tag/rmcp-v3.1.2) and requires Rust 1.88 or newer. The rmcp 3 rollout retains legacy MCP initialization compatibility and targets MCP protocol revisions `2025-11-25` and `2026-07-28`.
