@@ -28,7 +28,7 @@ async fn run() -> anyhow::Result<()> {
 
 /// Stdio transport — for CLI-based MCP clients (Claude Desktop, Cursor, Kiro, etc.)
 async fn run_stdio() -> anyhow::Result<()> {
-    use rmcp::{transport::stdio, ServiceExt};
+    use rmcp::{ServiceExt, transport::stdio};
 
     tracing::info!("Excel MCP Server starting on stdio");
 
@@ -47,20 +47,27 @@ async fn run_stdio() -> anyhow::Result<()> {
 /// Streamable HTTP transport — for web-based MCP clients
 async fn run_http() -> anyhow::Result<()> {
     use rmcp::transport::streamable_http_server::{
-        session::local::LocalSessionManager, StreamableHttpServerConfig, StreamableHttpService,
+        StreamableHttpServerConfig, StreamableHttpService, session::local::LocalSessionManager,
     };
     use tower_http::cors::CorsLayer;
 
     let bind = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "127.0.0.1:8080".to_string());
     let ct = tokio_util::sync::CancellationToken::new();
+    // Stateless requests must still resolve workbook handles created by earlier
+    // requests. The store belongs to the process, not to an HTTP session or a
+    // one-shot handler instance.
+    let store = Arc::new(RwLock::new(WorkbookStore::new()));
 
     let mcp_service = StreamableHttpService::new(
-        || {
-            let store = Arc::new(RwLock::new(WorkbookStore::new()));
-            Ok(ExcelMcpServer::new(store))
+        {
+            let store = Arc::clone(&store);
+            move || Ok(ExcelMcpServer::new(Arc::clone(&store)))
         },
         LocalSessionManager::default().into(),
-        StreamableHttpServerConfig::default().with_cancellation_token(ct.child_token()),
+        StreamableHttpServerConfig::default()
+            .with_cancellation_token(ct.child_token())
+            .with_legacy_session_mode(false)
+            .with_stateless_protocol_metadata_required(true),
     );
 
     // Serve static web client from ./web-client/ if it exists
@@ -71,6 +78,21 @@ async fn run_http() -> anyhow::Result<()> {
     let cors = CorsLayer::very_permissive();
 
     let mut router = axum::Router::new().nest_service("/mcp", mcp_service);
+
+    // Legacy initialization/session semantics are deliberately isolated from
+    // the strict endpoint and must be enabled explicitly during migration.
+    if std::env::var("ENABLE_LEGACY_MCP").is_ok_and(|value| value == "1" || value == "true") {
+        let legacy_service = StreamableHttpService::new(
+            {
+                let store = Arc::clone(&store);
+                move || Ok(ExcelMcpServer::new(Arc::clone(&store)))
+            },
+            LocalSessionManager::default().into(),
+            StreamableHttpServerConfig::default().with_cancellation_token(ct.child_token()),
+        );
+        router = router.nest_service("/mcp/legacy", legacy_service);
+        tracing::warn!("Legacy MCP endpoint enabled at http://{}/mcp/legacy", bind);
+    }
 
     if web_dir.exists() {
         tracing::info!("Serving web client from {}", web_dir.display());

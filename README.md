@@ -67,7 +67,18 @@ For web-based MCP clients:
 excel-mcp-server http
 ```
 
-Starts a streamable HTTP server on `127.0.0.1:8080`. Point your client at `http://localhost:8080/mcp`.
+Starts a streamable HTTP server on `127.0.0.1:8080`. Point a 2026-07-28 client
+at `http://localhost:8080/mcp`. This endpoint is strictly stateless: it rejects
+legacy session negotiation and requires per-request protocol metadata. Workbook
+handles are kept in a process-wide store, so a handle created in one HTTP
+request works in later requests without `Mcp-Session-Id`.
+
+During a controlled migration only, set `ENABLE_LEGACY_MCP=1` to expose the old
+initialization/session transport separately at `http://localhost:8080/mcp/legacy`.
+Tool discovery responses are public-cacheable for one hour (`ttlMs=3600000`).
+Do not route new clients to that compatibility endpoint. Workbook handles are
+not shared between replicas; use one instance or externalize the workbook store
+before horizontally scaling this server.
 
 ```bash
 BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
@@ -390,4 +401,4 @@ Copyright 2025 Zavora Technologies Ltd.
 
 ## rmcp and MCP compatibility
 
-This server is built with [`rmcp` 3.1.2](https://github.com/modelcontextprotocol/rust-sdk/releases/tag/rmcp-v3.1.2) and requires Rust 1.88 or newer. The rmcp 3 rollout retains legacy MCP initialization compatibility and targets MCP protocol revisions `2025-11-25` and `2026-07-28`.
+This server is built with [`rmcp` 3.1.2](https://github.com/modelcontextprotocol/rust-sdk/releases/tag/rmcp-v3.1.2) and requires Rust 1.94.1 or newer. The rmcp 3 rollout retains legacy MCP initialization compatibility and targets MCP protocol revisions `2025-11-25` and `2026-07-28`.

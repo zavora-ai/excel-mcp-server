@@ -4,9 +4,11 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use rmcp::{
+    ErrorData, RoleServer, ServerHandler,
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
-    model::{ServerCapabilities, ServerInfo},
-    tool, tool_handler, tool_router, ServerHandler,
+    model::{CacheScope, ListToolsResult, PaginatedRequestParams, ServerCapabilities, ServerInfo},
+    service::RequestContext,
+    tool, tool_handler, tool_router,
 };
 
 use crate::store::WorkbookStore;
@@ -546,10 +548,7 @@ impl ExcelMcpServer {
     #[tool(
         description = "Add a sunburst chart (Excel 2016+ ChartEx). Hierarchical data with category labels and values."
     )]
-    async fn add_sunburst_chart(
-        &self,
-        Parameters(i): Parameters<AddSunburstChartInput>,
-    ) -> String {
+    async fn add_sunburst_chart(&self, Parameters(i): Parameters<AddSunburstChartInput>) -> String {
         tool_fn!(self.store, tools::expanded::add_sunburst_chart, i)
     }
 
@@ -694,19 +693,15 @@ impl ExcelMcpServer {
 
     // ── Read enhancements (2) ──
 
-    #[tool(description = "Read a single cell's comment (author and text). Returns null if no comment exists.")]
-    async fn read_cell_comment(
-        &self,
-        Parameters(i): Parameters<ReadCellCommentInput>,
-    ) -> String {
+    #[tool(
+        description = "Read a single cell's comment (author and text). Returns null if no comment exists."
+    )]
+    async fn read_cell_comment(&self, Parameters(i): Parameters<ReadCellCommentInput>) -> String {
         tool_fn!(self.store, tools::expanded::read_cell_comment, i)
     }
 
     #[tool(description = "Read a cell's format (bold, italic, colors, number format, etc.)")]
-    async fn read_cell_format(
-        &self,
-        Parameters(i): Parameters<ReadCellFormatInput>,
-    ) -> String {
+    async fn read_cell_format(&self, Parameters(i): Parameters<ReadCellFormatInput>) -> String {
         tool_fn!(self.store, tools::expanded::read_cell_format, i)
     }
 
@@ -715,10 +710,7 @@ impl ExcelMcpServer {
     #[tool(
         description = "Manage custom XML parts: action='add' (namespace, content) or action='read' (namespace)"
     )]
-    async fn manage_custom_xml(
-        &self,
-        Parameters(i): Parameters<ManageCustomXmlInput>,
-    ) -> String {
+    async fn manage_custom_xml(&self, Parameters(i): Parameters<ManageCustomXmlInput>) -> String {
         tool_fn!(self.store, tools::expanded::manage_custom_xml, i)
     }
 
@@ -731,11 +723,10 @@ impl ExcelMcpServer {
 
     // ── SST optimization (1) ──
 
-    #[tool(description = "Set the shared string table threshold for optimization. Lower values use more memory but faster writes.")]
-    async fn set_sst_threshold(
-        &self,
-        Parameters(i): Parameters<SetSstThresholdInput>,
-    ) -> String {
+    #[tool(
+        description = "Set the shared string table threshold for optimization. Lower values use more memory but faster writes."
+    )]
+    async fn set_sst_threshold(&self, Parameters(i): Parameters<SetSstThresholdInput>) -> String {
         tool_fn!(self.store, tools::expanded::set_sst_threshold, i)
     }
 
@@ -816,6 +807,18 @@ impl ExcelMcpServer {
 
 #[tool_handler]
 impl ServerHandler for ExcelMcpServer {
+    async fn list_tools(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListToolsResult, ErrorData> {
+        Ok(
+            ListToolsResult::with_all_items(Self::tool_router().list_all())
+                .with_ttl_ms(3_600_000)
+                .with_cache_scope(CacheScope::Public),
+        )
+    }
+
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build()).with_instructions(
             "Excel file manipulation server powered by zavora-xlsx. 83 tools covering: \
