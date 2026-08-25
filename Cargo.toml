@@ -1,6 +1,6 @@
 [package]
 name = "excel-mcp-server"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 authors = ["James Karanja Maina"]
 license = "Apache-2.0"
@@ -12,7 +12,7 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 rmcp = { version = "3.1.2", features = ["server", "transport-io", "transport-streamable-http-server", "macros"] }
-zavora-xlsx = "0.1.1"
+zavora-xlsx = { version = "0.1.2", path = "../../zavora-xlsx" }
 tokio = { version = "1", features = ["full"] }
 tokio-util = "0.7"
 axum = "0.8"
@@ -28,3 +28,4 @@ uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
 proptest = "1"
+rmcp = { version = "3.1.2", features = ["client", "transport-child-process"] }

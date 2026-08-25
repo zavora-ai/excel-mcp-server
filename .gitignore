@@ -27,3 +27,16 @@ Thumbs.db
 
 # Artifacts directory (runtime generated files)
 /artifacts/
+
+# Example output directory
+/output/
+
+# Tooling session output — transient, regenerated on every run.
+.playwright-mcp/
+
+# Demo and test media. Kept out of history on purpose: several megabytes of video in a
+# published crate stays there permanently, and none of it is needed to build or test.
+*.mp4
+*.wav
+test_image.png
+zspreadsheet_*.png

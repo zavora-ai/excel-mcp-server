@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-08-25
+
+### Fixed
+
+- Upgrade the published MCP transport from rmcp 1.x to rmcp 3.1.2 so
+  `server/discover` works with the `2026-07-28` lifecycle while legacy
+  `initialize` clients remain compatible.
+- Depend on zavora-xlsx 0.1.2 so edits to existing cells and workbook formatting
+  survive read-edit-save round trips without a local path patch.
+
+### Added
+
+- Exercise both the 2026 auto-discovery handshake and the legacy initialize
+  handshake against the packaged stdio binary.
+
 ## [0.2.1] - 2025-07-25
 
 Major release: full feature parity with zavora-xlsx 0.1.1. Tool count increased from 43 to 74.

@@ -191,3 +191,38 @@ pub struct ValidationAlert {
     pub title: String,
     pub message: String,
 }
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SortDirection {
+    Ascending,
+    Descending,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum FillDirection {
+    Down,
+    Right,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum FillType {
+    Linear,
+    Date,
+    Copy,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ConditionOperator {
+    Equals,
+    NotEquals,
+    Contains,
+    GreaterThan,
+    LessThan,
+    StartsWith,
+    EndsWith,
+    IsEmpty,
+}

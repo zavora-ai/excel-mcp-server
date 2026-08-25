@@ -1,12 +1,13 @@
-//! ExcelMcpServer — 43 consolidated MCP tools backed by zavora-xlsx.
+//! ExcelMcpServer — 93 consolidated MCP tools backed by zavora-xlsx.
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use rmcp::{
-    handler::server::{router::tool::ToolRouter, wrapper::Parameters},
+    ServerHandler,
+    handler::server::wrapper::Parameters,
     model::{ServerCapabilities, ServerInfo},
-    tool, tool_handler, tool_router, ServerHandler,
+    tool, tool_handler, tool_router,
 };
 
 use crate::store::WorkbookStore;
@@ -15,16 +16,12 @@ use crate::types::inputs::*;
 
 #[derive(Debug, Clone)]
 pub struct ExcelMcpServer {
-    tool_router: ToolRouter<Self>,
     store: Arc<RwLock<WorkbookStore>>,
 }
 
 impl ExcelMcpServer {
     pub fn new(store: Arc<RwLock<WorkbookStore>>) -> Self {
-        Self {
-            tool_router: Self::tool_router(),
-            store,
-        }
+        Self { store }
     }
 }
 
@@ -153,7 +150,7 @@ impl ExcelMcpServer {
     // ── Write (4) ──
 
     #[tool(
-        description = "Write values to multiple cells. Strings starting with '=' are formulas. Numbers, booleans, ISO dates auto-detected."
+        description = "Write values to multiple cells. Strings starting with '=' are written as formulas with relative reference support. Numbers, booleans, ISO dates auto-detected. Use this for batch writes instead of write_formula for individual cells."
     )]
     async fn write_cells(&self, Parameters(i): Parameters<WriteCellsInput>) -> String {
         tool_fn!(self.store, tools::write::write_cells, i)
@@ -177,7 +174,7 @@ impl ExcelMcpServer {
     // ── Formulas (1) ──
 
     #[tool(
-        description = "Write a formula. Set formula_type to 'array' for CSE array formulas (cell = range), 'dynamic' for Excel 365 spill formulas, or omit for regular. Optional cached_result."
+        description = "Write a formula. Set formula_type to 'array' for CSE array formulas (cell = range), 'dynamic' for Excel 365 spill formulas, or omit for regular. Optional cached_result. For single formulas needing array or dynamic behavior. For regular formulas, prefer write_cells which auto-detects formulas."
     )]
     async fn write_formula(
         &self,
@@ -207,6 +204,92 @@ impl ExcelMcpServer {
     #[tool(description = "Merge a range of cells into a single cell")]
     async fn merge_cells(&self, Parameters(i): Parameters<MergeCellsInput>) -> String {
         tool_fn!(self.store, tools::format::merge_cells, i)
+    }
+
+    // ── High-level formatting (7) ──
+
+    #[tool(
+        description = "Apply multiple formatting operations in one call. Each operation targets a range with formatting properties. Continues on failure and reports failures."
+    )]
+    async fn batch_format(&self, Parameters(i): Parameters<BatchFormatInput>) -> String {
+        tool_fn!(self.store, tools::format::batch_format, i)
+    }
+
+    #[tool(
+        description = "Apply a complete professional theme to a sheet. Themes: 'financial_professional' (dark blue headers, alternating rows), 'corporate' (gray headers, subtle borders), 'minimal' (bold headers, no colors). Specify header_rows and total_rows."
+    )]
+    async fn apply_theme(&self, Parameters(i): Parameters<ApplyThemeInput>) -> String {
+        tool_fn!(self.store, tools::format::apply_theme, i)
+    }
+
+    #[tool(
+        description = "Copy formatting from a source range to one or more target ranges. Tiles source formatting if target is larger."
+    )]
+    async fn copy_format(&self, Parameters(i): Parameters<CopyFormatInput>) -> String {
+        tool_fn!(self.store, tools::format::copy_format, i)
+    }
+
+    #[tool(
+        description = "Apply a named style preset to a range. Presets: 'header' (bold white on blue), 'title' (bold 14pt), 'currency', 'percentage', 'date', 'number', 'text', 'accounting', 'total' (bold + top border). Supports comma-separated ranges."
+    )]
+    async fn apply_style(&self, Parameters(i): Parameters<ApplyStyleInput>) -> String {
+        tool_fn!(self.store, tools::format::apply_style, i)
+    }
+
+    #[tool(
+        description = "Format a row as a table header: bold, white font, dark blue background, center alignment, freeze panes below, autofilter. Optional header_row, background_color, font_color overrides."
+    )]
+    async fn format_as_table_header(
+        &self,
+        Parameters(i): Parameters<FormatAsTableHeaderInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::format::format_as_table_header, i)
+    }
+
+    #[tool(
+        description = "Apply table-like formatting to a range: header styling on first row, alternating row shading, thin borders. Styles: 'blue' (default), 'green', 'gray', 'orange'. Autofits columns."
+    )]
+    async fn format_as_table_range(
+        &self,
+        Parameters(i): Parameters<FormatAsTableRangeInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::format::format_as_table_range, i)
+    }
+
+    #[tool(
+        description = "Read formatting properties for cells in a range. Groups cells with identical formatting and reports ranges sharing each format. Returns bold, italic, font size/color, background, number format, alignment, borders."
+    )]
+    async fn describe_formatting(
+        &self,
+        Parameters(i): Parameters<DescribeFormattingInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::read::describe_formatting, i)
+    }
+
+    // ── High-level writing (3) ──
+
+    #[tool(
+        description = "Write a 2D grid of data starting at a cell, filling rightward and downward. Auto-detects types: '=' prefix → formula, numbers, booleans, ISO dates. Continues on cell write failure and reports failures."
+    )]
+    async fn write_grid(&self, Parameters(i): Parameters<WriteGridInput>) -> String {
+        tool_fn!(self.store, tools::write::write_grid, i)
+    }
+
+    #[tool(
+        description = "Write a formula at a start cell and fill it rightward to an end column, adjusting relative column references. Accepts formula with or without leading '='. Preserves absolute ($) references. Returns error if start column >= end column."
+    )]
+    async fn write_row_range(&self, Parameters(i): Parameters<WriteRowRangeInput>) -> String {
+        tool_fn!(self.store, tools::write::write_row_range, i)
+    }
+
+    #[tool(
+        description = "Copy formulas from a source column to multiple target columns across a row range, adjusting relative column references. Skips non-formula cells. Returns count of formulas cloned and columns filled."
+    )]
+    async fn clone_column_formulas(
+        &self,
+        Parameters(i): Parameters<CloneColumnFormulasInput>,
+    ) -> String {
+        tool_fn!(self.store, tools::write::clone_column_formulas, i)
     }
 
     // ── Row/column format (1) ──
@@ -460,10 +543,7 @@ impl ExcelMcpServer {
     #[tool(
         description = "Add a sunburst chart (Excel 2016+ ChartEx). Hierarchical data with category labels and values."
     )]
-    async fn add_sunburst_chart(
-        &self,
-        Parameters(i): Parameters<AddSunburstChartInput>,
-    ) -> String {
+    async fn add_sunburst_chart(&self, Parameters(i): Parameters<AddSunburstChartInput>) -> String {
         tool_fn!(self.store, tools::expanded::add_sunburst_chart, i)
     }
 
@@ -608,19 +688,15 @@ impl ExcelMcpServer {
 
     // ── Read enhancements (2) ──
 
-    #[tool(description = "Read a single cell's comment (author and text). Returns null if no comment exists.")]
-    async fn read_cell_comment(
-        &self,
-        Parameters(i): Parameters<ReadCellCommentInput>,
-    ) -> String {
+    #[tool(
+        description = "Read a single cell's comment (author and text). Returns null if no comment exists."
+    )]
+    async fn read_cell_comment(&self, Parameters(i): Parameters<ReadCellCommentInput>) -> String {
         tool_fn!(self.store, tools::expanded::read_cell_comment, i)
     }
 
     #[tool(description = "Read a cell's format (bold, italic, colors, number format, etc.)")]
-    async fn read_cell_format(
-        &self,
-        Parameters(i): Parameters<ReadCellFormatInput>,
-    ) -> String {
+    async fn read_cell_format(&self, Parameters(i): Parameters<ReadCellFormatInput>) -> String {
         tool_fn!(self.store, tools::expanded::read_cell_format, i)
     }
 
@@ -629,10 +705,7 @@ impl ExcelMcpServer {
     #[tool(
         description = "Manage custom XML parts: action='add' (namespace, content) or action='read' (namespace)"
     )]
-    async fn manage_custom_xml(
-        &self,
-        Parameters(i): Parameters<ManageCustomXmlInput>,
-    ) -> String {
+    async fn manage_custom_xml(&self, Parameters(i): Parameters<ManageCustomXmlInput>) -> String {
         tool_fn!(self.store, tools::expanded::manage_custom_xml, i)
     }
 
@@ -645,11 +718,10 @@ impl ExcelMcpServer {
 
     // ── SST optimization (1) ──
 
-    #[tool(description = "Set the shared string table threshold for optimization. Lower values use more memory but faster writes.")]
-    async fn set_sst_threshold(
-        &self,
-        Parameters(i): Parameters<SetSstThresholdInput>,
-    ) -> String {
+    #[tool(
+        description = "Set the shared string table threshold for optimization. Lower values use more memory but faster writes."
+    )]
+    async fn set_sst_threshold(&self, Parameters(i): Parameters<SetSstThresholdInput>) -> String {
         tool_fn!(self.store, tools::expanded::set_sst_threshold, i)
     }
 
@@ -661,13 +733,78 @@ impl ExcelMcpServer {
     async fn write_json_rows(&self, Parameters(i): Parameters<WriteJsonRowsInput>) -> String {
         tool_fn!(self.store, tools::expanded::write_json_rows, i)
     }
+
+    // ── Data operations (9) ──
+
+    #[tool(
+        description = "Sort a range by one or more columns. Supports ascending/descending, numeric and string comparison, multi-key sorting. Note: formatting stays on cell positions — it does not move with the sorted data. Apply formatting after sorting if needed."
+    )]
+    async fn sort_range(&self, Parameters(i): Parameters<SortRangeInput>) -> String {
+        tool_fn!(self.store, tools::data::sort_range, i)
+    }
+
+    #[tool(
+        description = "Find and replace text in a sheet or range. Matches against displayed cell values (not formulas). Supports case-insensitive matching via match_case flag. Returns replacement count."
+    )]
+    async fn find_replace(&self, Parameters(i): Parameters<FindReplaceInput>) -> String {
+        tool_fn!(self.store, tools::data::find_replace, i)
+    }
+
+    #[tool(
+        description = "Fill a series from seed values. Types: 'linear' (arithmetic progression from numeric seeds), 'date' (date interval continuation), 'copy' (cyclic repetition). Direction: 'down' (default) or 'right'."
+    )]
+    async fn fill_series(&self, Parameters(i): Parameters<FillSeriesInput>) -> String {
+        tool_fn!(self.store, tools::data::fill_series, i)
+    }
+
+    #[tool(
+        description = "Delete rows matching a condition. Operators: equals, not_equals, contains, greater_than, less_than, starts_with, ends_with, is_empty. Skips header row if has_header is true."
+    )]
+    async fn delete_rows_where(&self, Parameters(i): Parameters<DeleteRowsWhereInput>) -> String {
+        tool_fn!(self.store, tools::data::delete_rows_where, i)
+    }
+
+    #[tool(
+        description = "Copy a sheet with all values, formulas, and formatting. Returns new sheet name. Error if source not found or new name already exists."
+    )]
+    async fn copy_sheet(&self, Parameters(i): Parameters<CopySheetInput>) -> String {
+        tool_fn!(self.store, tools::sheets::copy_sheet, i)
+    }
+
+    #[tool(
+        description = "Copy values, formulas, and formatting from a source range to a destination cell. Supports cross-sheet copy via destination_sheet parameter."
+    )]
+    async fn copy_range(&self, Parameters(i): Parameters<CopyRangeInput>) -> String {
+        tool_fn!(self.store, tools::data::copy_range, i)
+    }
+
+    #[tool(
+        description = "Transpose a range: rows become columns and columns become rows. If no destination_cell specified, writes back to source range origin. Returns original and transposed dimensions."
+    )]
+    async fn transpose_range(&self, Parameters(i): Parameters<TransposeRangeInput>) -> String {
+        tool_fn!(self.store, tools::data::transpose_range, i)
+    }
+
+    #[tool(
+        description = "Remove duplicate rows keeping first occurrence. Compare specified columns, or all columns if none specified. Skips header row if has_header is true."
+    )]
+    async fn remove_duplicates(&self, Parameters(i): Parameters<RemoveDuplicatesInput>) -> String {
+        tool_fn!(self.store, tools::data::remove_duplicates, i)
+    }
+
+    #[tool(
+        description = "Split each cell in a column by a delimiter, writing parts into consecutive columns to the right. Default delimiter is comma. Skips header row if has_header is true."
+    )]
+    async fn split_column(&self, Parameters(i): Parameters<SplitColumnInput>) -> String {
+        tool_fn!(self.store, tools::data::split_column, i)
+    }
 }
 
 #[tool_handler]
 impl ServerHandler for ExcelMcpServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build()).with_instructions(
-            "Excel file manipulation server powered by zavora-xlsx. 74 tools covering: \
+            "Excel file manipulation server powered by zavora-xlsx. 93 tools covering: \
                  workbook lifecycle, sheet management, cell reading/writing, formatting, \
                  charts (11 types + pivot charts + waterfall/funnel/treemap/sunburst/histogram/box-whisker/map \
                  with data tables, 3D views, error bars, axis formatting, drop/high-low lines, gradients), \
@@ -678,7 +815,11 @@ impl ServerHandler for ExcelMcpServer {
                  protection (basic + granular with per-feature allow/deny), autofilter, \
                  formulas (regular/array/dynamic with recalculation), rich text, \
                  document properties, custom properties, sheet metadata, chart sheets, \
-                 encrypted open/save, template save, parallel save, and CSV export."
+                 encrypted open/save, template save, parallel save, CSV export, \
+                 high-level formatting (batch format, themes, copy format, style presets, table formatting), \
+                 high-level writing (write grid, write row range, clone column formulas), \
+                 and data operations (sort, find/replace, fill series, delete rows, \
+                 copy sheet, copy range, transpose, remove duplicates, split column)."
                 .to_string(),
         )
     }
