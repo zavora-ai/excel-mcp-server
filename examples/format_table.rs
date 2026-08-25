@@ -65,9 +65,9 @@ fn main() {
         FormatAsTableHeaderInput {
             workbook_id: id.clone(),
             sheet_name: "Sheet1".to_string(),
-            header_row: None, // defaults to row 1
+            header_row: None,       // defaults to row 1
             background_color: None, // defaults to #4472C4
-            font_color: None, // defaults to #FFFFFF
+            font_color: None,       // defaults to #FFFFFF
         },
     )
     .unwrap();

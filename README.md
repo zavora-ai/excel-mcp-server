@@ -2,7 +2,7 @@
 
 A high-performance [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that gives AI assistants full control over Excel spreadsheets. Built in Rust with [zavora-xlsx](https://github.com/zavora-ai/zavora-xlsx) for native xlsx read/write and [rmcp](https://github.com/modelcontextprotocol/rust-sdk) for the MCP protocol layer.
 
-**74 tools** covering the complete Excel feature set — cell I/O, formatting, 14 chart types, pivot tables with calculated fields, slicers, timelines, form controls, conditional formatting, data validation, images, shapes, threaded comments, formula recalculation, encrypted save/open, and more.
+**93 tools** covering the complete Excel feature set — cell I/O, formatting, 14 chart types, pivot tables with calculated fields, slicers, timelines, form controls, conditional formatting, data validation, images, shapes, threaded comments, formula recalculation, encrypted save/open, and more.
 
 ## Install
 
@@ -97,7 +97,7 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 - **Two transports** — stdio for CLI clients, streamable HTTP for web clients
 - **In-memory workbook store** — 10-workbook capacity with 30-minute TTL eviction
 
-## Tools Reference (74 tools)
+## Tools Reference (93 tools)
 
 ### Workbook Lifecycle (4)
 
@@ -321,7 +321,7 @@ BIND_ADDRESS=0.0.0.0:3000 excel-mcp-server http
 ```
 src/
 ├── main.rs            Entry point — stdio or HTTP transport
-├── server.rs          MCP tool router — 74 tools registered
+├── server.rs          MCP tool router — 93 tools registered
 ├── store.rs           In-memory workbook store with TTL eviction
 ├── lib.rs             Crate root
 ├── error.rs           Error types
@@ -343,7 +343,7 @@ src/
 │   ├── sheets.rs      Sheet management
 │   └── expanded.rs    All advanced tools (charts, pivots, controls, etc.)
 └── types/
-    ├── inputs.rs      Input structs for all 74 tools
+    ├── inputs.rs      Input structs for all 93 tools
     ├── enums.rs       Chart types, formats, validation rules
     └── responses.rs   JSON response builders
 ```

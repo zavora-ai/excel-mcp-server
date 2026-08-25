@@ -17,8 +17,7 @@ pub fn add_conditional_format(
     };
     // Parse all ranges upfront for atomic validation (Requirement 1.6):
     // if any segment is invalid, no conditional format is applied to any range.
-    let ranges =
-        parse_multi_range(&input.range).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let ranges = parse_multi_range(&input.range).map_err(|e| anyhow::anyhow!("{e}"))?;
     let ws = entry
         .data
         .worksheet(idx)

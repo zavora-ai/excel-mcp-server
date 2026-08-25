@@ -112,10 +112,14 @@ fn main() {
     println!("Applied percentage format to row 3");
 
     // Step 4: Save and reopen so cell_format() can read the formatting back
-    save_workbook(&mut store, SaveWorkbookInput {
-        workbook_id: id.clone(),
-        file_path: "output/describe_formatting_example.xlsx".into(),
-    }).unwrap();
+    save_workbook(
+        &mut store,
+        SaveWorkbookInput {
+            workbook_id: id.clone(),
+            file_path: "output/describe_formatting_example.xlsx".into(),
+        },
+    )
+    .unwrap();
 
     let open_result = excel_mcp_server::tools::workbook::open_workbook(
         &mut store,
@@ -123,7 +127,8 @@ fn main() {
             file_path: "output/describe_formatting_example.xlsx".into(),
             read_only: false,
         },
-    ).unwrap();
+    )
+    .unwrap();
     let v: serde_json::Value = serde_json::from_str(&open_result).unwrap();
     let id = v["data"]["workbook_id"].as_str().unwrap().to_string();
     println!("Reopened workbook with ID: {}", id);

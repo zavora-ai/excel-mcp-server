@@ -28,7 +28,7 @@ async fn run() -> anyhow::Result<()> {
 
 /// Stdio transport — for CLI-based MCP clients (Claude Desktop, Cursor, Kiro, etc.)
 async fn run_stdio() -> anyhow::Result<()> {
-    use rmcp::{transport::stdio, ServiceExt};
+    use rmcp::{ServiceExt, transport::stdio};
 
     tracing::info!("Excel MCP Server starting on stdio");
 
@@ -47,7 +47,7 @@ async fn run_stdio() -> anyhow::Result<()> {
 /// Streamable HTTP transport — for web-based MCP clients
 async fn run_http() -> anyhow::Result<()> {
     use rmcp::transport::streamable_http_server::{
-        session::local::LocalSessionManager, StreamableHttpServerConfig, StreamableHttpService,
+        StreamableHttpServerConfig, StreamableHttpService, session::local::LocalSessionManager,
     };
     use tower_http::cors::CorsLayer;
 

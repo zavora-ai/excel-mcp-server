@@ -65,8 +65,8 @@ fn main() {
         workbook_id: id.clone(),
         sheet_name: "Sheet1".to_string(),
         theme: "financial_professional".to_string(),
-        header_rows: vec![1],  // 1-based: row 1 is the header
-        total_rows: vec![7],   // 1-based: row 7 is the total
+        header_rows: vec![1], // 1-based: row 1 is the header
+        total_rows: vec![7],  // 1-based: row 7 is the total
         auto_detect_formats: false,
     };
 

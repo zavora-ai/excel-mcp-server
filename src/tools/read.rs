@@ -34,7 +34,7 @@ pub fn read_sheet(
                         page_rows: 0,
                         continuation_token: None,
                     },
-                ))
+                ));
             }
         }
     };
@@ -260,19 +260,19 @@ pub fn describe_formatting(
             None
         };
         let fs = fmt.get_font_size();
-        let font_size_bits = if fs != 0.0 {
-            Some(fs.to_bits())
-        } else {
-            None
-        };
-        let font_color = fmt.get_font_color().map(|rgb| {
-            format!("#{:02X}{:02X}{:02X}", rgb[0], rgb[1], rgb[2])
-        });
-        let background_color = fmt.get_bg_color().map(|rgb| {
-            format!("#{:02X}{:02X}{:02X}", rgb[0], rgb[1], rgb[2])
-        });
+        let font_size_bits = if fs != 0.0 { Some(fs.to_bits()) } else { None };
+        let font_color = fmt
+            .get_font_color()
+            .map(|rgb| format!("#{:02X}{:02X}{:02X}", rgb[0], rgb[1], rgb[2]));
+        let background_color = fmt
+            .get_bg_color()
+            .map(|rgb| format!("#{:02X}{:02X}{:02X}", rgb[0], rgb[1], rgb[2]));
         let nf = fmt.get_num_format();
-        let number_format = if nf.is_empty() { None } else { Some(nf.to_string()) };
+        let number_format = if nf.is_empty() {
+            None
+        } else {
+            Some(nf.to_string())
+        };
         let h_align = match fmt.get_h_align() {
             1 => Some("left".to_string()),
             2 => Some("center".to_string()),
@@ -296,7 +296,10 @@ pub fn describe_formatting(
             || bl != zavora_xlsx::BorderStyle::None
             || br != zavora_xlsx::BorderStyle::None
         {
-            Some(format!("top:{:?},bottom:{:?},left:{:?},right:{:?}", bt, bb, bl, br))
+            Some(format!(
+                "top:{:?},bottom:{:?},left:{:?},right:{:?}",
+                bt, bb, bl, br
+            ))
         } else {
             None
         };

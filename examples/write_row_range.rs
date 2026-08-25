@@ -45,9 +45,9 @@ fn main() {
 
         // Year 1 base values (column B)
         ws.write(1, 1, 100000.0).unwrap(); // Revenue
-        ws.write(2, 1, 0.10).unwrap();     // Growth rate
-        ws.write(3, 1, 60000.0).unwrap();  // Expenses
-        ws.write(4, 1, 40000.0).unwrap();  // Profit
+        ws.write(2, 1, 0.10).unwrap(); // Growth rate
+        ws.write(3, 1, 60000.0).unwrap(); // Expenses
+        ws.write(4, 1, 40000.0).unwrap(); // Profit
     }
     println!("Wrote seed data for Year 1");
 

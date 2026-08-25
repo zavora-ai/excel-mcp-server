@@ -47,18 +47,21 @@ fn main() {
 
         // Year 1 base values (column B)
         ws.write(1, 1, 1000000.0).unwrap(); // Revenue
-        ws.write(2, 1, 400000.0).unwrap();  // COGS
+        ws.write(2, 1, 400000.0).unwrap(); // COGS
 
         // Year 1 formulas (column B)
-        ws.write_formula(3, 1, "B2-B3").unwrap();  // Gross Profit = Revenue - COGS
-        ws.write(4, 1, 200000.0).unwrap();          // OpEx (fixed value)
-        ws.write_formula(5, 1, "B4-B5").unwrap();  // EBITDA = Gross Profit - OpEx
+        ws.write_formula(3, 1, "B2-B3").unwrap(); // Gross Profit = Revenue - COGS
+        ws.write(4, 1, 200000.0).unwrap(); // OpEx (fixed value)
+        ws.write_formula(5, 1, "B4-B5").unwrap(); // EBITDA = Gross Profit - OpEx
 
         // Year 2+ base values (columns C-F) — revenue and COGS grow
         for col in 2u16..=5 {
-            ws.write(1, col, 1000000.0 * (1.0 + 0.1 * (col - 1) as f64)).unwrap();
-            ws.write(2, col, 400000.0 * (1.0 + 0.05 * (col - 1) as f64)).unwrap();
-            ws.write(4, col, 200000.0 * (1.0 + 0.03 * (col - 1) as f64)).unwrap();
+            ws.write(1, col, 1000000.0 * (1.0 + 0.1 * (col - 1) as f64))
+                .unwrap();
+            ws.write(2, col, 400000.0 * (1.0 + 0.05 * (col - 1) as f64))
+                .unwrap();
+            ws.write(4, col, 200000.0 * (1.0 + 0.03 * (col - 1) as f64))
+                .unwrap();
         }
     }
     println!("Wrote financial model with Year 1 formulas in column B");

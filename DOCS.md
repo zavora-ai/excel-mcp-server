@@ -1,6 +1,6 @@
 # Excel MCP Server — Detailed Documentation
 
-Complete reference for all 74 tools in the Excel MCP Server.
+Complete reference for all 93 tools in the Excel MCP Server.
 
 ## Table of Contents
 

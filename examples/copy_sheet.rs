@@ -48,7 +48,8 @@ fn main() {
             ws.write(row, 1, *sale).unwrap();
             ws.write(row, 2, *target).unwrap();
             // Achievement formula
-            ws.write_formula(row, 3, &format!("B{}/C{}", row + 1, row + 1)).unwrap();
+            ws.write_formula(row, 3, &format!("B{}/C{}", row + 1, row + 1))
+                .unwrap();
         }
     }
     println!("Wrote sales data to Sheet1");

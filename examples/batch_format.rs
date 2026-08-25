@@ -7,9 +7,7 @@
 use excel_mcp_server::store::{WorkbookEntry, WorkbookStore};
 use excel_mcp_server::tools::format::batch_format;
 use excel_mcp_server::tools::workbook::save_workbook;
-use excel_mcp_server::types::inputs::{
-    BatchFormatInput, FormatOperation, SaveWorkbookInput,
-};
+use excel_mcp_server::types::inputs::{BatchFormatInput, FormatOperation, SaveWorkbookInput};
 use std::time::Instant;
 
 fn main() {

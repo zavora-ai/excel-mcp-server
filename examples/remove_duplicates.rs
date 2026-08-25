@@ -39,7 +39,7 @@ fn main() {
             ("bob@example.com", "Bob", "Marketing"),
             ("alice@example.com", "Alice", "Engineering"), // duplicate
             ("carol@example.com", "Carol", "Sales"),
-            ("bob@example.com", "Bob", "Marketing"),       // duplicate
+            ("bob@example.com", "Bob", "Marketing"), // duplicate
             ("dave@example.com", "Dave", "Operations"),
             ("alice@example.com", "Alice", "Engineering"), // duplicate
             ("eve@example.com", "Eve", "HR"),

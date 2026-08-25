@@ -74,8 +74,7 @@ pub fn set_cell_format(
         .map_err(|e| anyhow::anyhow!("{e}"))?;
     // Parse all ranges upfront for atomic validation (Requirement 1.6):
     // if any segment is invalid, no formatting is applied to any range.
-    let ranges = parse_multi_range(&input.range)
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let ranges = parse_multi_range(&input.range).map_err(|e| anyhow::anyhow!("{e}"))?;
     for (r1, c1, r2, c2) in &ranges {
         ws.set_range_format(*r1, *c1, *r2, *c2, &fmt)
             .map_err(|e| anyhow::anyhow!("{e}"))?;
@@ -100,8 +99,7 @@ pub fn merge_cells(
     };
     // Parse all ranges upfront for atomic validation (Requirement 1.6):
     // if any segment is invalid, no merging is applied to any range.
-    let ranges =
-        parse_multi_range(&input.range).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let ranges = parse_multi_range(&input.range).map_err(|e| anyhow::anyhow!("{e}"))?;
     let ws = entry
         .data
         .worksheet(idx)
@@ -238,10 +236,7 @@ pub fn apply_theme(
         return Ok(error(
             ErrorCategory::InvalidInput,
             &format!("Unknown theme '{}'", input.theme),
-            &format!(
-                "Valid themes: {}",
-                valid_themes.join(", ")
-            ),
+            &format!("Valid themes: {}", valid_themes.join(", ")),
         ));
     }
 
@@ -272,25 +267,65 @@ pub fn apply_theme(
     };
 
     // Convert 1-based header/total rows to 0-based row indices
-    let header_rows_0: Vec<u32> = input.header_rows.iter().map(|r| r.saturating_sub(1)).collect();
-    let total_rows_0: Vec<u32> = input.total_rows.iter().map(|r| r.saturating_sub(1)).collect();
+    let header_rows_0: Vec<u32> = input
+        .header_rows
+        .iter()
+        .map(|r| r.saturating_sub(1))
+        .collect();
+    let total_rows_0: Vec<u32> = input
+        .total_rows
+        .iter()
+        .map(|r| r.saturating_sub(1))
+        .collect();
 
     match input.theme.as_str() {
         "financial_professional" => {
-            apply_financial_professional(ws, used_c1, used_c2, used_r1, used_r2, &header_rows_0, &total_rows_0)?;
+            apply_financial_professional(
+                ws,
+                used_c1,
+                used_c2,
+                used_r1,
+                used_r2,
+                &header_rows_0,
+                &total_rows_0,
+            )?;
         }
         "corporate" => {
-            apply_corporate(ws, used_c1, used_c2, used_r1, used_r2, &header_rows_0, &total_rows_0)?;
+            apply_corporate(
+                ws,
+                used_c1,
+                used_c2,
+                used_r1,
+                used_r2,
+                &header_rows_0,
+                &total_rows_0,
+            )?;
         }
         "minimal" => {
-            apply_minimal(ws, used_c1, used_c2, used_r1, used_r2, &header_rows_0, &total_rows_0)?;
+            apply_minimal(
+                ws,
+                used_c1,
+                used_c2,
+                used_r1,
+                used_r2,
+                &header_rows_0,
+                &total_rows_0,
+            )?;
         }
         _ => unreachable!(), // Already validated above
     }
 
     // Auto-detect currency columns if opted in (Requirement 3.7)
     if input.auto_detect_formats {
-        auto_detect_currency_columns(ws, used_r1, used_c1, used_r2, used_c2, &header_rows_0, &total_rows_0)?;
+        auto_detect_currency_columns(
+            ws,
+            used_r1,
+            used_c1,
+            used_r2,
+            used_c2,
+            &header_rows_0,
+            &total_rows_0,
+        )?;
     }
 
     // Autofit columns (all themes)
@@ -339,19 +374,17 @@ fn apply_financial_professional(
     let light_blue_fmt = zavora_xlsx::Format::new().background_color("#D6E4F0");
     let white_fmt = zavora_xlsx::Format::new().background_color("#FFFFFF");
 
-    let mut shade_index: usize = 0;
-    for r in used_r1..=used_r2 {
-        if header_rows.contains(&r) || total_rows.contains(&r) {
-            continue;
-        }
-        let fmt = if shade_index % 2 == 0 {
+    for (shade_index, r) in (used_r1..=used_r2)
+        .filter(|r| !header_rows.contains(r) && !total_rows.contains(r))
+        .enumerate()
+    {
+        let fmt = if shade_index.is_multiple_of(2) {
             &light_blue_fmt
         } else {
             &white_fmt
         };
         ws.set_range_format(r, c1, r, c2, fmt)
             .map_err(|e| anyhow::anyhow!("{e}"))?;
-        shade_index += 1;
     }
 
     Ok(())
@@ -391,8 +424,7 @@ fn apply_corporate(
     }
 
     // Apply subtle thin borders to all data rows (not headers/totals)
-    let data_fmt = zavora_xlsx::Format::new()
-        .border(zavora_xlsx::BorderStyle::Thin);
+    let data_fmt = zavora_xlsx::Format::new().border(zavora_xlsx::BorderStyle::Thin);
     for r in used_r1..=used_r2 {
         if header_rows.contains(&r) || total_rows.contains(&r) {
             continue;
@@ -531,8 +563,7 @@ pub fn copy_format(
         .map_err(|e| anyhow::anyhow!("{e}"))?;
 
     // Read formatting from each cell in the source range into a 2D grid
-    let mut source_formats: Vec<Vec<Option<zavora_xlsx::Format>>> =
-        Vec::with_capacity(src_rows);
+    let mut source_formats: Vec<Vec<Option<zavora_xlsx::Format>>> = Vec::with_capacity(src_rows);
     let mut has_any_format = false;
 
     for r in sr1..=sr2 {
@@ -690,7 +721,6 @@ fn sheet_err(name: &str) -> String {
     )
 }
 
-
 pub fn apply_style(
     store: &mut WorkbookStore,
     input: ApplyStyleInput,
@@ -801,14 +831,8 @@ pub fn format_as_table_header(
     let header_row = header_row_1based.saturating_sub(1);
 
     // Determine colors
-    let bg_color = input
-        .background_color
-        .as_deref()
-        .unwrap_or("#4472C4");
-    let font_color = input
-        .font_color
-        .as_deref()
-        .unwrap_or("#FFFFFF");
+    let bg_color = input.background_color.as_deref().unwrap_or("#4472C4");
+    let font_color = input.font_color.as_deref().unwrap_or("#FFFFFF");
 
     // Apply header formatting: bold, font color, bg color, center align
     let header_fmt = zavora_xlsx::Format::new()
@@ -888,19 +912,16 @@ pub fn format_as_table_range(
     let alt_fmt = zavora_xlsx::Format::new()
         .background_color(alt_row_bg)
         .border(zavora_xlsx::BorderStyle::Thin);
-    let plain_fmt = zavora_xlsx::Format::new()
-        .border(zavora_xlsx::BorderStyle::Thin);
+    let plain_fmt = zavora_xlsx::Format::new().border(zavora_xlsx::BorderStyle::Thin);
 
-    let mut shade_index: usize = 0;
-    for r in (r1 + 1)..=r2 {
-        let fmt = if shade_index % 2 == 0 {
+    for (shade_index, r) in ((r1 + 1)..=r2).enumerate() {
+        let fmt = if shade_index.is_multiple_of(2) {
             &alt_fmt
         } else {
             &plain_fmt
         };
         ws.set_range_format(r, c1, r, c2, fmt)
             .map_err(|e| anyhow::anyhow!("{e}"))?;
-        shade_index += 1;
     }
 
     // Autofit columns within range
@@ -1014,7 +1035,11 @@ mod tests {
         v["data"]["workbook_id"].as_str().unwrap().to_string()
     }
 
-    fn helper_write_cells(store: &mut WorkbookStore, wid: &str, cells: Vec<(&str, serde_json::Value)>) {
+    fn helper_write_cells(
+        store: &mut WorkbookStore,
+        wid: &str,
+        cells: Vec<(&str, serde_json::Value)>,
+    ) {
         let cell_writes: Vec<crate::types::inputs::CellWrite> = cells
             .into_iter()
             .map(|(cell, value)| crate::types::inputs::CellWrite {
@@ -1040,14 +1065,22 @@ mod tests {
         static COUNTER: AtomicU64 = AtomicU64::new(0);
         let n = COUNTER.fetch_add(1, Ordering::Relaxed);
         let tmp = format!("/tmp/test_fmt_{}.xlsx", n);
-        crate::tools::workbook::save_workbook(store,
+        crate::tools::workbook::save_workbook(
+            store,
             crate::types::inputs::SaveWorkbookInput {
-                workbook_id: wid.to_string(), file_path: tmp.clone(),
-            }).unwrap();
-        let open_result = crate::tools::workbook::open_workbook(store,
+                workbook_id: wid.to_string(),
+                file_path: tmp.clone(),
+            },
+        )
+        .unwrap();
+        let open_result = crate::tools::workbook::open_workbook(
+            store,
             crate::types::inputs::OpenWorkbookInput {
-                file_path: tmp, read_only: false,
-            }).unwrap();
+                file_path: tmp,
+                read_only: false,
+            },
+        )
+        .unwrap();
         let ov: serde_json::Value = serde_json::from_str(&open_result).unwrap();
         ov["data"]["workbook_id"].as_str().unwrap().to_string()
     }
@@ -1142,14 +1175,12 @@ mod tests {
 
             // 3. Data rows alternate shading
             if num_rows > 1 {
-                let mut shade_idx: usize = 0;
-                for r in 1..num_rows {
+                for (shade_idx, r) in (1..num_rows).enumerate() {
                     let fmt = ws.cell_format(r, 0).unwrap();
-                    if shade_idx % 2 == 0 {
+                    if shade_idx.is_multiple_of(2) {
                         prop_assert!(fmt.get_bg_color().is_some(),
                             "Row {} (shade {}) needs bg", r, shade_idx);
                     }
-                    shade_idx += 1;
                 }
             }
         }
@@ -1237,9 +1268,9 @@ mod tests {
             let e2 = store2.get_mut(&wid2r).unwrap();
             let ws2 = e2.data.worksheet(0).unwrap();
 
-            for i in 0..n {
+            for (i, f1) in f1s.iter().enumerate().take(n) {
                 let f2 = ws2.cell_format(i as u32, 0);
-                match (&f1s[i], &f2) {
+                match (f1, &f2) {
                     (Some(a), Some(b)) => {
                         prop_assert_eq!(a.is_bold(), b.is_bold(), "Bold row {}", i);
                         prop_assert_eq!(a.is_italic(), b.is_italic(), "Italic row {}", i);
@@ -1258,9 +1289,15 @@ mod tests {
     fn test_batch_format_empty_operations() {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
-        let result = batch_format(&mut store, BatchFormatInput {
-            workbook_id: wid, sheet_name: "Sheet1".into(), operations: vec![],
-        }).unwrap();
+        let result = batch_format(
+            &mut store,
+            BatchFormatInput {
+                workbook_id: wid,
+                sheet_name: "Sheet1".into(),
+                operations: vec![],
+            },
+        )
+        .unwrap();
         let v = helper_parse_response(&result);
         assert_eq!(v["status"].as_str(), Some("success"));
         assert_eq!(v["data"]["operations_applied"].as_u64(), Some(0));
@@ -1272,51 +1309,95 @@ mod tests {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
         helper_write_cells(&mut store, &wid, vec![("A1", serde_json::json!("hi"))]);
-        let result = batch_format(&mut store, BatchFormatInput {
-            workbook_id: wid, sheet_name: "Sheet1".into(),
-            operations: vec![
-                crate::types::inputs::FormatOperation {
-                    range: "A1:A1".into(), bold: Some(true),
-                    italic: None, underline: None, font_size: None, font_color: None,
-                    background_color: None, number_format: None, horizontal_alignment: None,
-                    vertical_alignment: None, border_style: None,
-                },
-                crate::types::inputs::FormatOperation {
-                    range: "INVALID".into(), bold: Some(true),
-                    italic: None, underline: None, font_size: None, font_color: None,
-                    background_color: None, number_format: None, horizontal_alignment: None,
-                    vertical_alignment: None, border_style: None,
-                },
-                crate::types::inputs::FormatOperation {
-                    range: "A1:A1".into(), italic: Some(true),
-                    bold: None, underline: None, font_size: None, font_color: None,
-                    background_color: None, number_format: None, horizontal_alignment: None,
-                    vertical_alignment: None, border_style: None,
-                },
-            ],
-        }).unwrap();
+        let result = batch_format(
+            &mut store,
+            BatchFormatInput {
+                workbook_id: wid,
+                sheet_name: "Sheet1".into(),
+                operations: vec![
+                    crate::types::inputs::FormatOperation {
+                        range: "A1:A1".into(),
+                        bold: Some(true),
+                        italic: None,
+                        underline: None,
+                        font_size: None,
+                        font_color: None,
+                        background_color: None,
+                        number_format: None,
+                        horizontal_alignment: None,
+                        vertical_alignment: None,
+                        border_style: None,
+                    },
+                    crate::types::inputs::FormatOperation {
+                        range: "INVALID".into(),
+                        bold: Some(true),
+                        italic: None,
+                        underline: None,
+                        font_size: None,
+                        font_color: None,
+                        background_color: None,
+                        number_format: None,
+                        horizontal_alignment: None,
+                        vertical_alignment: None,
+                        border_style: None,
+                    },
+                    crate::types::inputs::FormatOperation {
+                        range: "A1:A1".into(),
+                        italic: Some(true),
+                        bold: None,
+                        underline: None,
+                        font_size: None,
+                        font_color: None,
+                        background_color: None,
+                        number_format: None,
+                        horizontal_alignment: None,
+                        vertical_alignment: None,
+                        border_style: None,
+                    },
+                ],
+            },
+        )
+        .unwrap();
         let v = helper_parse_response(&result);
         assert_eq!(v["status"].as_str(), Some("success"));
         assert_eq!(v["data"]["operations_applied"].as_u64(), Some(2));
         assert_eq!(v["data"]["failures"].as_array().unwrap().len(), 1);
-        assert_eq!(v["data"]["failures"][0]["operation_index"].as_u64(), Some(1));
+        assert_eq!(
+            v["data"]["failures"][0]["operation_index"].as_u64(),
+            Some(1)
+        );
     }
 
     #[test]
     fn test_apply_theme_financial() {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
-        helper_write_cells(&mut store, &wid, vec![
-            ("A1", serde_json::json!("Name")), ("B1", serde_json::json!("Amt")),
-            ("A2", serde_json::json!("Alice")), ("B2", serde_json::json!(100)),
-            ("A3", serde_json::json!("Bob")), ("B3", serde_json::json!(200)),
-            ("A4", serde_json::json!("Total")), ("B4", serde_json::json!(300)),
-        ]);
-        let result = apply_theme(&mut store, ApplyThemeInput {
-            workbook_id: wid.clone(), sheet_name: "Sheet1".into(),
-            theme: "financial_professional".into(),
-            header_rows: vec![1], total_rows: vec![4], auto_detect_formats: false,
-        }).unwrap();
+        helper_write_cells(
+            &mut store,
+            &wid,
+            vec![
+                ("A1", serde_json::json!("Name")),
+                ("B1", serde_json::json!("Amt")),
+                ("A2", serde_json::json!("Alice")),
+                ("B2", serde_json::json!(100)),
+                ("A3", serde_json::json!("Bob")),
+                ("B3", serde_json::json!(200)),
+                ("A4", serde_json::json!("Total")),
+                ("B4", serde_json::json!(300)),
+            ],
+        );
+        let result = apply_theme(
+            &mut store,
+            ApplyThemeInput {
+                workbook_id: wid.clone(),
+                sheet_name: "Sheet1".into(),
+                theme: "financial_professional".into(),
+                header_rows: vec![1],
+                total_rows: vec![4],
+                auto_detect_formats: false,
+            },
+        )
+        .unwrap();
         let v = helper_parse_response(&result);
         assert_eq!(v["status"].as_str(), Some("success"));
         // Save/reopen to verify formatting
@@ -1332,15 +1413,30 @@ mod tests {
     fn test_apply_theme_corporate() {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
-        helper_write_cells(&mut store, &wid, vec![
-            ("A1", serde_json::json!("Name")), ("A2", serde_json::json!("Alice")),
-        ]);
-        let result = apply_theme(&mut store, ApplyThemeInput {
-            workbook_id: wid.clone(), sheet_name: "Sheet1".into(),
-            theme: "corporate".into(),
-            header_rows: vec![1], total_rows: vec![], auto_detect_formats: false,
-        }).unwrap();
-        assert_eq!(helper_parse_response(&result)["status"].as_str(), Some("success"));
+        helper_write_cells(
+            &mut store,
+            &wid,
+            vec![
+                ("A1", serde_json::json!("Name")),
+                ("A2", serde_json::json!("Alice")),
+            ],
+        );
+        let result = apply_theme(
+            &mut store,
+            ApplyThemeInput {
+                workbook_id: wid.clone(),
+                sheet_name: "Sheet1".into(),
+                theme: "corporate".into(),
+                header_rows: vec![1],
+                total_rows: vec![],
+                auto_detect_formats: false,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            helper_parse_response(&result)["status"].as_str(),
+            Some("success")
+        );
         let wid2 = helper_save_reopen(&mut store, &wid);
         let entry = store.get_mut(&wid2).unwrap();
         let ws = entry.data.worksheet(0).unwrap();
@@ -1353,15 +1449,30 @@ mod tests {
     fn test_apply_theme_minimal() {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
-        helper_write_cells(&mut store, &wid, vec![
-            ("A1", serde_json::json!("Name")), ("A2", serde_json::json!("Alice")),
-        ]);
-        let result = apply_theme(&mut store, ApplyThemeInput {
-            workbook_id: wid.clone(), sheet_name: "Sheet1".into(),
-            theme: "minimal".into(),
-            header_rows: vec![1], total_rows: vec![], auto_detect_formats: false,
-        }).unwrap();
-        assert_eq!(helper_parse_response(&result)["status"].as_str(), Some("success"));
+        helper_write_cells(
+            &mut store,
+            &wid,
+            vec![
+                ("A1", serde_json::json!("Name")),
+                ("A2", serde_json::json!("Alice")),
+            ],
+        );
+        let result = apply_theme(
+            &mut store,
+            ApplyThemeInput {
+                workbook_id: wid.clone(),
+                sheet_name: "Sheet1".into(),
+                theme: "minimal".into(),
+                header_rows: vec![1],
+                total_rows: vec![],
+                auto_detect_formats: false,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            helper_parse_response(&result)["status"].as_str(),
+            Some("success")
+        );
         let wid2 = helper_save_reopen(&mut store, &wid);
         let entry = store.get_mut(&wid2).unwrap();
         let ws = entry.data.worksheet(0).unwrap();
@@ -1374,11 +1485,18 @@ mod tests {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
         helper_write_cells(&mut store, &wid, vec![("A1", serde_json::json!("d"))]);
-        let result = apply_theme(&mut store, ApplyThemeInput {
-            workbook_id: wid, sheet_name: "Sheet1".into(),
-            theme: "nonexistent".into(),
-            header_rows: vec![], total_rows: vec![], auto_detect_formats: false,
-        }).unwrap();
+        let result = apply_theme(
+            &mut store,
+            ApplyThemeInput {
+                workbook_id: wid,
+                sheet_name: "Sheet1".into(),
+                theme: "nonexistent".into(),
+                header_rows: vec![],
+                total_rows: vec![],
+                auto_detect_formats: false,
+            },
+        )
+        .unwrap();
         let v = helper_parse_response(&result);
         assert_eq!(v["status"].as_str(), Some("error"));
         assert!(v["message"].as_str().unwrap().contains("nonexistent"));
@@ -1388,13 +1506,24 @@ mod tests {
     fn test_copy_format_no_formatting() {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
-        helper_write_cells(&mut store, &wid, vec![
-            ("A1", serde_json::json!("s")), ("C1", serde_json::json!("t")),
-        ]);
-        let result = copy_format(&mut store, CopyFormatInput {
-            workbook_id: wid, sheet_name: "Sheet1".into(),
-            source_range: "A1:A1".into(), target_ranges: vec!["C1:C1".into()],
-        }).unwrap();
+        helper_write_cells(
+            &mut store,
+            &wid,
+            vec![
+                ("A1", serde_json::json!("s")),
+                ("C1", serde_json::json!("t")),
+            ],
+        );
+        let result = copy_format(
+            &mut store,
+            CopyFormatInput {
+                workbook_id: wid,
+                sheet_name: "Sheet1".into(),
+                source_range: "A1:A1".into(),
+                target_ranges: vec!["C1:C1".into()],
+            },
+        )
+        .unwrap();
         let v = helper_parse_response(&result);
         assert_eq!(v["status"].as_str(), Some("success"));
         assert!(v["data"]["note"].as_str().is_some());
@@ -1404,25 +1533,41 @@ mod tests {
     fn test_copy_format_tiling() {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
-        helper_write_cells(&mut store, &wid, vec![
-            ("A1", serde_json::json!("s")),
-            ("C1", serde_json::json!("t1")), ("D1", serde_json::json!("t2")),
-            ("C2", serde_json::json!("t3")), ("D2", serde_json::json!("t4")),
-        ]);
+        helper_write_cells(
+            &mut store,
+            &wid,
+            vec![
+                ("A1", serde_json::json!("s")),
+                ("C1", serde_json::json!("t1")),
+                ("D1", serde_json::json!("t2")),
+                ("C2", serde_json::json!("t3")),
+                ("D2", serde_json::json!("t4")),
+            ],
+        );
         {
             let entry = store.get_mut(&wid).unwrap();
             let ws = entry.data.worksheet(0).unwrap();
-            ws.set_range_format(0, 0, 0, 0, &zavora_xlsx::Format::new().bold()).unwrap();
+            ws.set_range_format(0, 0, 0, 0, &zavora_xlsx::Format::new().bold())
+                .unwrap();
         }
         // Save/reopen so cell_format works (copy_format reads source via cell_format)
         let wid2 = helper_save_reopen(&mut store, &wid);
-        let result = copy_format(&mut store, CopyFormatInput {
-            workbook_id: wid2.clone(), sheet_name: "Sheet1".into(),
-            source_range: "A1:A1".into(), target_ranges: vec!["C1:D2".into()],
-        }).unwrap();
+        let result = copy_format(
+            &mut store,
+            CopyFormatInput {
+                workbook_id: wid2.clone(),
+                sheet_name: "Sheet1".into(),
+                source_range: "A1:A1".into(),
+                target_ranges: vec!["C1:D2".into()],
+            },
+        )
+        .unwrap();
         let v = helper_parse_response(&result);
         assert_eq!(v["status"].as_str(), Some("success"));
-        assert!(v["data"]["note"].is_null(), "Should not have 'no formatting' note");
+        assert!(
+            v["data"]["note"].is_null(),
+            "Should not have 'no formatting' note"
+        );
         // Save/reopen again to verify target formatting
         let wid3 = helper_save_reopen(&mut store, &wid2);
         let entry = store.get_mut(&wid3).unwrap();
@@ -1438,21 +1583,45 @@ mod tests {
 
     #[test]
     fn test_apply_style_each_preset() {
-        for preset in &["header","title","currency","percentage","date","number","text","accounting","total"] {
+        for preset in &[
+            "header",
+            "title",
+            "currency",
+            "percentage",
+            "date",
+            "number",
+            "text",
+            "accounting",
+            "total",
+        ] {
             let mut store = WorkbookStore::new();
             let wid = helper_create_workbook(&mut store);
             helper_write_cells(&mut store, &wid, vec![("A1", serde_json::json!("d"))]);
-            let result = apply_style(&mut store, ApplyStyleInput {
-                workbook_id: wid.clone(), sheet_name: "Sheet1".into(),
-                range: "A1:A1".into(), style: preset.to_string(),
-            }).unwrap();
-            assert_eq!(helper_parse_response(&result)["status"].as_str(), Some("success"),
-                "preset '{}' failed", preset);
+            let result = apply_style(
+                &mut store,
+                ApplyStyleInput {
+                    workbook_id: wid.clone(),
+                    sheet_name: "Sheet1".into(),
+                    range: "A1:A1".into(),
+                    style: preset.to_string(),
+                },
+            )
+            .unwrap();
+            assert_eq!(
+                helper_parse_response(&result)["status"].as_str(),
+                Some("success"),
+                "preset '{}' failed",
+                preset
+            );
             // Save/reopen to verify formatting was applied
             let wid2 = helper_save_reopen(&mut store, &wid);
             let entry = store.get_mut(&wid2).unwrap();
             let ws = entry.data.worksheet(0).unwrap();
-            assert!(ws.cell_format(0, 0).is_some(), "'{}' should apply format", preset);
+            assert!(
+                ws.cell_format(0, 0).is_some(),
+                "'{}' should apply format",
+                preset
+            );
         }
     }
 
@@ -1461,10 +1630,16 @@ mod tests {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
         helper_write_cells(&mut store, &wid, vec![("A1", serde_json::json!("d"))]);
-        let result = apply_style(&mut store, ApplyStyleInput {
-            workbook_id: wid, sheet_name: "Sheet1".into(),
-            range: "A1:A1".into(), style: "bad_style".into(),
-        }).unwrap();
+        let result = apply_style(
+            &mut store,
+            ApplyStyleInput {
+                workbook_id: wid,
+                sheet_name: "Sheet1".into(),
+                range: "A1:A1".into(),
+                style: "bad_style".into(),
+            },
+        )
+        .unwrap();
         let v = helper_parse_response(&result);
         assert_eq!(v["status"].as_str(), Some("error"));
         assert!(v["message"].as_str().unwrap().contains("bad_style"));
@@ -1474,15 +1649,31 @@ mod tests {
     fn test_format_table_header_defaults() {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
-        helper_write_cells(&mut store, &wid, vec![
-            ("A1", serde_json::json!("Name")), ("B1", serde_json::json!("Val")),
-            ("A2", serde_json::json!("Alice")), ("B2", serde_json::json!(100)),
-        ]);
-        let result = format_as_table_header(&mut store, FormatAsTableHeaderInput {
-            workbook_id: wid.clone(), sheet_name: "Sheet1".into(),
-            header_row: None, background_color: None, font_color: None,
-        }).unwrap();
-        assert_eq!(helper_parse_response(&result)["status"].as_str(), Some("success"));
+        helper_write_cells(
+            &mut store,
+            &wid,
+            vec![
+                ("A1", serde_json::json!("Name")),
+                ("B1", serde_json::json!("Val")),
+                ("A2", serde_json::json!("Alice")),
+                ("B2", serde_json::json!(100)),
+            ],
+        );
+        let result = format_as_table_header(
+            &mut store,
+            FormatAsTableHeaderInput {
+                workbook_id: wid.clone(),
+                sheet_name: "Sheet1".into(),
+                header_row: None,
+                background_color: None,
+                font_color: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            helper_parse_response(&result)["status"].as_str(),
+            Some("success")
+        );
         let wid2 = helper_save_reopen(&mut store, &wid);
         let entry = store.get_mut(&wid2).unwrap();
         let ws = entry.data.worksheet(0).unwrap();
@@ -1496,16 +1687,31 @@ mod tests {
     fn test_format_table_header_custom_row() {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
-        helper_write_cells(&mut store, &wid, vec![
-            ("A1", serde_json::json!("Title")),
-            ("A2", serde_json::json!("Name")), ("B2", serde_json::json!("Val")),
-            ("A3", serde_json::json!("Alice")),
-        ]);
-        let result = format_as_table_header(&mut store, FormatAsTableHeaderInput {
-            workbook_id: wid.clone(), sheet_name: "Sheet1".into(),
-            header_row: Some(2), background_color: None, font_color: None,
-        }).unwrap();
-        assert_eq!(helper_parse_response(&result)["status"].as_str(), Some("success"));
+        helper_write_cells(
+            &mut store,
+            &wid,
+            vec![
+                ("A1", serde_json::json!("Title")),
+                ("A2", serde_json::json!("Name")),
+                ("B2", serde_json::json!("Val")),
+                ("A3", serde_json::json!("Alice")),
+            ],
+        );
+        let result = format_as_table_header(
+            &mut store,
+            FormatAsTableHeaderInput {
+                workbook_id: wid.clone(),
+                sheet_name: "Sheet1".into(),
+                header_row: Some(2),
+                background_color: None,
+                font_color: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            helper_parse_response(&result)["status"].as_str(),
+            Some("success")
+        );
         let wid2 = helper_save_reopen(&mut store, &wid);
         let entry = store.get_mut(&wid2).unwrap();
         let ws = entry.data.worksheet(0).unwrap();
@@ -1517,29 +1723,55 @@ mod tests {
     fn test_format_table_header_empty_sheet() {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
-        let result = format_as_table_header(&mut store, FormatAsTableHeaderInput {
-            workbook_id: wid, sheet_name: "Sheet1".into(),
-            header_row: None, background_color: None, font_color: None,
-        }).unwrap();
+        let result = format_as_table_header(
+            &mut store,
+            FormatAsTableHeaderInput {
+                workbook_id: wid,
+                sheet_name: "Sheet1".into(),
+                header_row: None,
+                background_color: None,
+                font_color: None,
+            },
+        )
+        .unwrap();
         let v = helper_parse_response(&result);
         assert_eq!(v["status"].as_str(), Some("error"));
-        assert!(v["message"].as_str().unwrap().to_lowercase().contains("empty"));
+        assert!(
+            v["message"]
+                .as_str()
+                .unwrap()
+                .to_lowercase()
+                .contains("empty")
+        );
     }
 
     #[test]
     fn test_format_table_range_default_blue() {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
-        helper_write_cells(&mut store, &wid, vec![
-            ("A1", serde_json::json!("Hdr")),
-            ("A2", serde_json::json!("D1")),
-            ("A3", serde_json::json!("D2")),
-        ]);
-        let result = format_as_table_range(&mut store, FormatAsTableRangeInput {
-            workbook_id: wid.clone(), sheet_name: "Sheet1".into(),
-            range: "A1:A3".into(), style: None,
-        }).unwrap();
-        assert_eq!(helper_parse_response(&result)["status"].as_str(), Some("success"));
+        helper_write_cells(
+            &mut store,
+            &wid,
+            vec![
+                ("A1", serde_json::json!("Hdr")),
+                ("A2", serde_json::json!("D1")),
+                ("A3", serde_json::json!("D2")),
+            ],
+        );
+        let result = format_as_table_range(
+            &mut store,
+            FormatAsTableRangeInput {
+                workbook_id: wid.clone(),
+                sheet_name: "Sheet1".into(),
+                range: "A1:A3".into(),
+                style: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            helper_parse_response(&result)["status"].as_str(),
+            Some("success")
+        );
         let wid2 = helper_save_reopen(&mut store, &wid);
         let entry = store.get_mut(&wid2).unwrap();
         let ws = entry.data.worksheet(0).unwrap();
@@ -1557,19 +1789,38 @@ mod tests {
         for style in &["blue", "green", "gray", "orange"] {
             let mut store = WorkbookStore::new();
             let wid = helper_create_workbook(&mut store);
-            helper_write_cells(&mut store, &wid, vec![
-                ("A1", serde_json::json!("H")), ("A2", serde_json::json!("D")),
-            ]);
-            let result = format_as_table_range(&mut store, FormatAsTableRangeInput {
-                workbook_id: wid.clone(), sheet_name: "Sheet1".into(),
-                range: "A1:A2".into(), style: Some(style.to_string()),
-            }).unwrap();
-            assert_eq!(helper_parse_response(&result)["status"].as_str(), Some("success"),
-                "style '{}' failed", style);
+            helper_write_cells(
+                &mut store,
+                &wid,
+                vec![
+                    ("A1", serde_json::json!("H")),
+                    ("A2", serde_json::json!("D")),
+                ],
+            );
+            let result = format_as_table_range(
+                &mut store,
+                FormatAsTableRangeInput {
+                    workbook_id: wid.clone(),
+                    sheet_name: "Sheet1".into(),
+                    range: "A1:A2".into(),
+                    style: Some(style.to_string()),
+                },
+            )
+            .unwrap();
+            assert_eq!(
+                helper_parse_response(&result)["status"].as_str(),
+                Some("success"),
+                "style '{}' failed",
+                style
+            );
             let wid2 = helper_save_reopen(&mut store, &wid);
             let entry = store.get_mut(&wid2).unwrap();
             let ws = entry.data.worksheet(0).unwrap();
-            assert!(ws.cell_format(0, 0).unwrap().is_bold(), "'{}' header bold", style);
+            assert!(
+                ws.cell_format(0, 0).unwrap().is_bold(),
+                "'{}' header bold",
+                style
+            );
         }
     }
 
@@ -1578,10 +1829,15 @@ mod tests {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
         helper_write_cells(&mut store, &wid, vec![("A1", serde_json::json!("d"))]);
-        let result = crate::tools::read::describe_formatting(&mut store,
+        let result = crate::tools::read::describe_formatting(
+            &mut store,
             crate::types::inputs::DescribeFormattingInput {
-                workbook_id: wid, sheet_name: "Sheet1".into(), range: "A1:A1".into(),
-            }).unwrap();
+                workbook_id: wid,
+                sheet_name: "Sheet1".into(),
+                range: "A1:A1".into(),
+            },
+        )
+        .unwrap();
         let v = helper_parse_response(&result);
         assert_eq!(v["status"].as_str(), Some("success"));
         assert_eq!(v["data"]["format_groups"].as_array().unwrap().len(), 0);
@@ -1591,23 +1847,34 @@ mod tests {
     fn test_describe_formatting_grouped() {
         let mut store = WorkbookStore::new();
         let wid = helper_create_workbook(&mut store);
-        helper_write_cells(&mut store, &wid, vec![
-            ("A1", serde_json::json!("d1")),
-            ("A2", serde_json::json!("d2")),
-            ("A3", serde_json::json!("d3")),
-        ]);
+        helper_write_cells(
+            &mut store,
+            &wid,
+            vec![
+                ("A1", serde_json::json!("d1")),
+                ("A2", serde_json::json!("d2")),
+                ("A3", serde_json::json!("d3")),
+            ],
+        );
         {
             let entry = store.get_mut(&wid).unwrap();
             let ws = entry.data.worksheet(0).unwrap();
-            ws.set_range_format(0, 0, 1, 0, &zavora_xlsx::Format::new().bold()).unwrap();
-            ws.set_range_format(2, 0, 2, 0, &zavora_xlsx::Format::new().italic()).unwrap();
+            ws.set_range_format(0, 0, 1, 0, &zavora_xlsx::Format::new().bold())
+                .unwrap();
+            ws.set_range_format(2, 0, 2, 0, &zavora_xlsx::Format::new().italic())
+                .unwrap();
         }
         // Save/reopen so cell_format works (used by describe_formatting)
         let wid2 = helper_save_reopen(&mut store, &wid);
-        let result = crate::tools::read::describe_formatting(&mut store,
+        let result = crate::tools::read::describe_formatting(
+            &mut store,
             crate::types::inputs::DescribeFormattingInput {
-                workbook_id: wid2, sheet_name: "Sheet1".into(), range: "A1:A3".into(),
-            }).unwrap();
+                workbook_id: wid2,
+                sheet_name: "Sheet1".into(),
+                range: "A1:A3".into(),
+            },
+        )
+        .unwrap();
         let v = helper_parse_response(&result);
         assert_eq!(v["status"].as_str(), Some("success"));
         let groups = v["data"]["format_groups"].as_array().unwrap();

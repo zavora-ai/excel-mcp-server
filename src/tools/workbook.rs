@@ -62,7 +62,7 @@ pub fn open_workbook(
                 ErrorCategory::IoError,
                 &format!("Failed to open file: {e}"),
                 "Check the file is a valid Excel file and try again.",
-            ))
+            ));
         }
     };
     let sheets = zavora::sheet_summaries(&wb);

@@ -31,7 +31,7 @@ pub fn get_sheet_dimensions(
                 ErrorCategory::NotFound,
                 &format!("Sheet '{}' not found", input.sheet_name),
                 "Check sheet name.",
-            ))
+            ));
         }
     };
     let ws = entry
@@ -150,7 +150,7 @@ pub fn rename_sheet(
                 ErrorCategory::NotFound,
                 &format!("Sheet '{}' not found", input.current_name),
                 "Check sheet name.",
-            ))
+            ));
         }
     };
     entry
@@ -180,7 +180,7 @@ pub fn delete_sheet(
                 ErrorCategory::NotFound,
                 &format!("Sheet '{}' not found", input.sheet_name),
                 "Check sheet name.",
-            ))
+            ));
         }
     };
     entry
@@ -210,7 +210,7 @@ pub fn copy_sheet(
                 ErrorCategory::NotFound,
                 &format!("Sheet '{}' not found", input.source_sheet),
                 "Check sheet name.",
-            ))
+            ));
         }
     };
 
@@ -269,7 +269,7 @@ pub fn copy_sheet(
                 let _ = new_ws.write(*r, *c, *b);
             }
             zavora_xlsx::CellValue::DateTime(dt) => {
-                let _ = new_ws.write(*r, *c, dt.clone());
+                let _ = new_ws.write(*r, *c, *dt);
             }
             zavora_xlsx::CellValue::Formula { formula, .. } => {
                 let _ = new_ws.write_formula(*r, *c, formula);

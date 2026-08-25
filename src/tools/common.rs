@@ -1,7 +1,7 @@
 //! Shared helpers for tool modules.
 
 use crate::store::WorkbookStore;
-use crate::types::responses::{error, ErrorCategory};
+use crate::types::responses::{ErrorCategory, error};
 
 /// Build a not-found error response that includes the list of open workbook IDs.
 pub fn workbook_not_found(store: &WorkbookStore, id: &str) -> String {
@@ -136,9 +136,8 @@ pub fn adjust_formula_col_refs(formula: &str, col_offset: i16) -> String {
         // Check for a cell reference pattern.
         // A cell reference can be preceded by `!` (sheet ref), or appear at start
         // or after a non-alphanumeric/non-$ character.
-        let is_ref_start = i == 0
-            || !chars[i - 1].is_ascii_alphanumeric()
-            || (i > 0 && chars[i - 1] == '!');
+        let is_ref_start =
+            i == 0 || !chars[i - 1].is_ascii_alphanumeric() || (i > 0 && chars[i - 1] == '!');
 
         if is_ref_start {
             // Try to parse a cell reference: optional $ + column letters + optional $ + row digits
@@ -177,8 +176,7 @@ pub fn adjust_formula_col_refs(formula: &str, col_offset: i16) -> String {
                 if row_end > row_start {
                     // Make sure the character after the reference is not alphanumeric
                     // (to avoid matching partial identifiers like "SUM" in "SUMIF")
-                    let after_ok =
-                        j >= len || (!chars[j].is_ascii_alphabetic() && chars[j] != '_');
+                    let after_ok = j >= len || (!chars[j].is_ascii_alphabetic() && chars[j] != '_');
 
                     // Also ensure we're not in the middle of a sheet name before `!`
                     // If the next char is `!`, this is a sheet name, not a cell ref
@@ -187,26 +185,22 @@ pub fn adjust_formula_col_refs(formula: &str, col_offset: i16) -> String {
                     if after_ok && !is_sheet_prefix {
                         if col_is_absolute {
                             // Absolute column — emit unchanged
-                            let original: String =
-                                chars[ref_start..row_end].iter().collect();
+                            let original: String = chars[ref_start..row_end].iter().collect();
                             result.push_str(&original);
                         } else {
                             // Relative column — shift by offset
                             if let Some(col_idx) = col_letters_to_index(&col_letters) {
-                                let new_col =
-                                    (col_idx as i32 + col_offset as i32).max(0) as u16;
+                                let new_col = (col_idx as i32 + col_offset as i32).max(0) as u16;
                                 let new_letters = index_to_col_letters(new_col);
                                 result.push_str(&new_letters);
                                 if row_is_absolute {
                                     result.push('$');
                                 }
-                                let row_digits: String =
-                                    chars[row_start..row_end].iter().collect();
+                                let row_digits: String = chars[row_start..row_end].iter().collect();
                                 result.push_str(&row_digits);
                             } else {
                                 // Can't parse column — emit unchanged
-                                let original: String =
-                                    chars[ref_start..row_end].iter().collect();
+                                let original: String = chars[ref_start..row_end].iter().collect();
                                 result.push_str(&original);
                             }
                         }
@@ -312,19 +306,13 @@ mod tests {
 
     #[test]
     fn test_adjust_formula_expression() {
-        assert_eq!(
-            adjust_formula_col_refs("B10*(1+0.05)", 1),
-            "C10*(1+0.05)"
-        );
+        assert_eq!(adjust_formula_col_refs("B10*(1+0.05)", 1), "C10*(1+0.05)");
     }
 
     #[test]
     fn test_adjust_range_reference() {
         // SUM(B10:B20) shifted by +1 → SUM(C10:C20)
-        assert_eq!(
-            adjust_formula_col_refs("SUM(B10:B20)", 1),
-            "SUM(C10:C20)"
-        );
+        assert_eq!(adjust_formula_col_refs("SUM(B10:B20)", 1), "SUM(C10:C20)");
     }
 
     #[test]
@@ -339,19 +327,13 @@ mod tests {
     #[test]
     fn test_adjust_string_literal_preserved() {
         // Text inside quotes should NOT be adjusted
-        assert_eq!(
-            adjust_formula_col_refs(r#""Cell B10""#, 1),
-            r#""Cell B10""#
-        );
+        assert_eq!(adjust_formula_col_refs(r#""Cell B10""#, 1), r#""Cell B10""#);
     }
 
     #[test]
     fn test_adjust_sheet_reference() {
         // Sheet2!B10 shifted by +1 → Sheet2!C10
-        assert_eq!(
-            adjust_formula_col_refs("Sheet2!B10", 1),
-            "Sheet2!C10"
-        );
+        assert_eq!(adjust_formula_col_refs("Sheet2!B10", 1), "Sheet2!C10");
     }
 
     #[test]
@@ -374,10 +356,7 @@ mod tests {
     #[test]
     fn test_adjust_mixed_absolute_relative() {
         // $A$1*B10 shifted by +1 → $A$1*C10
-        assert_eq!(
-            adjust_formula_col_refs("$A$1*B10", 1),
-            "$A$1*C10"
-        );
+        assert_eq!(adjust_formula_col_refs("$A$1*B10", 1), "$A$1*C10");
     }
 
     #[test]
@@ -397,7 +376,10 @@ mod tests {
     const KNOWN_FORMATS: &[(&str, &str)] = &[
         ("currency", "$#,##0.00"),
         ("percentage", "0.0%"),
-        ("accounting", "_($* #,##0.00_);_($* (#,##0.00);_($* \"-\"??_);_(@_)"),
+        (
+            "accounting",
+            "_($* #,##0.00_);_($* (#,##0.00);_($* \"-\"??_);_(@_)",
+        ),
         ("multiple", "0.0\"x\""),
         ("date", "yyyy-mm-dd"),
         ("number", "#,##0"),
@@ -539,14 +521,14 @@ mod tests {
 
     /// Strategy to generate a cell reference of any kind.
     fn cell_ref_strategy() -> impl Strategy<Value = CellRefKind> {
-        (col_letter_strategy(), row_number_strategy(), 0u8..4u8).prop_map(
-            |(col, row, kind)| match kind {
+        (col_letter_strategy(), row_number_strategy(), 0u8..4u8).prop_map(|(col, row, kind)| {
+            match kind {
                 0 => CellRefKind::RelRel(col, row),
                 1 => CellRefKind::AbsAbs(col, row),
                 2 => CellRefKind::AbsRel(col, row),
                 _ => CellRefKind::RelAbs(col, row),
-            },
-        )
+            }
+        })
     }
 
     proptest! {

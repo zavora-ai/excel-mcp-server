@@ -29,7 +29,7 @@ pub fn write_cells(
                     ErrorCategory::ParseError,
                     &format!("Invalid cell reference '{}': {e}", cw.cell),
                     "Use A1 notation.",
-                ))
+                ));
             }
         };
         if let Err(e) = zavora::write_json_value(ws, row, col, &cw.value) {
@@ -229,8 +229,7 @@ pub fn clone_column_formulas(
 
     let mut target_cols = Vec::with_capacity(input.target_columns.len());
     for tc in &input.target_columns {
-        let c = zavora_xlsx::utility::col_from_letter(tc)
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
+        let c = zavora_xlsx::utility::col_from_letter(tc).map_err(|e| anyhow::anyhow!("{e}"))?;
         target_cols.push(c);
     }
 
@@ -291,7 +290,6 @@ fn sheet_not_found(name: &str) -> String {
     )
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -328,16 +326,32 @@ mod tests {
                 ],
                 vec![
                     serde_json::json!("=A1+1"),
-                    serde_json::json!(3.14),
+                    serde_json::json!(3.25),
                     serde_json::json!(false),
                 ],
             ],
         };
         let result = write_grid(&mut store, input).unwrap();
-        assert!(result.contains("\"status\":\"success\""), "Expected success: {}", result);
-        assert!(result.contains("\"rows_written\":2"), "Expected 2 rows: {}", result);
-        assert!(result.contains("\"columns_written\":3"), "Expected 3 cols: {}", result);
-        assert!(result.contains("\"cells_written\":6"), "Expected 6 cells: {}", result);
+        assert!(
+            result.contains("\"status\":\"success\""),
+            "Expected success: {}",
+            result
+        );
+        assert!(
+            result.contains("\"rows_written\":2"),
+            "Expected 2 rows: {}",
+            result
+        );
+        assert!(
+            result.contains("\"columns_written\":3"),
+            "Expected 3 cols: {}",
+            result
+        );
+        assert!(
+            result.contains("\"cells_written\":6"),
+            "Expected 6 cells: {}",
+            result
+        );
 
         // Verify values were written
         let entry = store.get_mut(&id).unwrap();
@@ -378,9 +392,17 @@ mod tests {
             ],
         };
         let result = write_grid(&mut store, input).unwrap();
-        assert!(result.contains("\"status\":\"success\""), "Expected success: {}", result);
+        assert!(
+            result.contains("\"status\":\"success\""),
+            "Expected success: {}",
+            result
+        );
         // Null values are skipped by write_json_value (not failures)
-        assert!(result.contains("\"rows_written\":2"), "Expected 2 rows: {}", result);
+        assert!(
+            result.contains("\"rows_written\":2"),
+            "Expected 2 rows: {}",
+            result
+        );
     }
 
     // ── write_row_range tests ──
@@ -396,8 +418,16 @@ mod tests {
             formula: "=B5*(1+0.05)".to_string(),
         };
         let result = write_row_range(&mut store, input).unwrap();
-        assert!(result.contains("\"status\":\"success\""), "Expected success: {}", result);
-        assert!(result.contains("\"cells_written\":3"), "Expected 3 cells: {}", result);
+        assert!(
+            result.contains("\"status\":\"success\""),
+            "Expected success: {}",
+            result
+        );
+        assert!(
+            result.contains("\"cells_written\":3"),
+            "Expected 3 cells: {}",
+            result
+        );
 
         // Verify formulas
         let entry = store.get_mut(&id).unwrap();
@@ -436,7 +466,11 @@ mod tests {
             formula: "$A$1*B2".to_string(), // no leading "="
         };
         let result = write_row_range(&mut store, input).unwrap();
-        assert!(result.contains("\"status\":\"success\""), "Expected success: {}", result);
+        assert!(
+            result.contains("\"status\":\"success\""),
+            "Expected success: {}",
+            result
+        );
 
         let entry = store.get_mut(&id).unwrap();
         let ws = entry.data.worksheet(0).unwrap();
@@ -475,8 +509,16 @@ mod tests {
             formula: "=A1".to_string(),
         };
         let result = write_row_range(&mut store, input).unwrap();
-        assert!(result.contains("\"status\":\"error\""), "Expected error: {}", result);
-        assert!(result.contains("must be less than"), "Expected column order error: {}", result);
+        assert!(
+            result.contains("\"status\":\"error\""),
+            "Expected error: {}",
+            result
+        );
+        assert!(
+            result.contains("must be less than"),
+            "Expected column order error: {}",
+            result
+        );
     }
 
     // ── clone_column_formulas tests ──
@@ -500,9 +542,21 @@ mod tests {
             end_row: 2,
         };
         let result = clone_column_formulas(&mut store, input).unwrap();
-        assert!(result.contains("\"status\":\"success\""), "Expected success: {}", result);
-        assert!(result.contains("\"formulas_cloned\":0"), "Expected 0 formulas: {}", result);
-        assert!(result.contains("\"columns_filled\":0"), "Expected 0 columns: {}", result);
+        assert!(
+            result.contains("\"status\":\"success\""),
+            "Expected success: {}",
+            result
+        );
+        assert!(
+            result.contains("\"formulas_cloned\":0"),
+            "Expected 0 formulas: {}",
+            result
+        );
+        assert!(
+            result.contains("\"columns_filled\":0"),
+            "Expected 0 columns: {}",
+            result
+        );
     }
 
     #[test]
@@ -513,8 +567,8 @@ mod tests {
             let entry = store.get_mut(&id).unwrap();
             let ws = entry.data.worksheet(0).unwrap();
             ws.write_formula(0, 2, "A1+B1").unwrap(); // C1 = formula
-            ws.write(1, 2, "plain text").unwrap();     // C2 = value (not formula)
-            ws.write_formula(2, 2, "A3*2").unwrap();   // C3 = formula
+            ws.write(1, 2, "plain text").unwrap(); // C2 = value (not formula)
+            ws.write_formula(2, 2, "A3*2").unwrap(); // C3 = formula
         }
         let input = CloneColumnFormulasInput {
             workbook_id: id.clone(),
@@ -525,10 +579,22 @@ mod tests {
             end_row: 3,
         };
         let result = clone_column_formulas(&mut store, input).unwrap();
-        assert!(result.contains("\"status\":\"success\""), "Expected success: {}", result);
+        assert!(
+            result.contains("\"status\":\"success\""),
+            "Expected success: {}",
+            result
+        );
         // Only 2 formulas should be cloned (C1 and C3), C2 is skipped
-        assert!(result.contains("\"formulas_cloned\":2"), "Expected 2 formulas: {}", result);
-        assert!(result.contains("\"columns_filled\":1"), "Expected 1 column: {}", result);
+        assert!(
+            result.contains("\"formulas_cloned\":2"),
+            "Expected 2 formulas: {}",
+            result
+        );
+        assert!(
+            result.contains("\"columns_filled\":1"),
+            "Expected 1 column: {}",
+            result
+        );
 
         // Verify D1 has adjusted formula: B1+C1 (offset +1 from C→D)
         // Wait, source is C (col 2), target is D (col 3), offset = 1
@@ -585,7 +651,7 @@ mod tests {
                     let val = match h % 3 {
                         0 => serde_json::json!((h % 10000) as f64 / 100.0),
                         1 => serde_json::json!(format!("str_{}_{}", ri, ci)),
-                        _ => serde_json::json!(h % 2 == 0),
+                        _ => serde_json::json!(h.is_multiple_of(2)),
                     };
                     row.push(val);
                 }

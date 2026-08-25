@@ -53,26 +53,30 @@ fn write_cell_value(
 ) -> Result<(), String> {
     match val {
         zavora_xlsx::CellValue::Empty => Ok(()),
-        zavora_xlsx::CellValue::String(s) => {
-            ws.write(row, col, s.as_str()).map(|_| ()).map_err(|e| e.to_string())
-        }
-        zavora_xlsx::CellValue::Number(n) => {
-            ws.write(row, col, *n).map(|_| ()).map_err(|e| e.to_string())
-        }
-        zavora_xlsx::CellValue::Bool(b) => {
-            ws.write(row, col, *b).map(|_| ()).map_err(|e| e.to_string())
-        }
-        zavora_xlsx::CellValue::DateTime(dt) => {
-            ws.write(row, col, dt.clone()).map(|_| ()).map_err(|e| e.to_string())
-        }
-        zavora_xlsx::CellValue::Formula { formula, .. } => {
-            ws.write_formula(row, col, formula).map(|_| ()).map_err(|e| e.to_string())
-        }
-        zavora_xlsx::CellValue::RichText(rt) => {
-            ws.write(row, col, rt.plain_text().as_str())
-                .map(|_| ())
-                .map_err(|e| e.to_string())
-        }
+        zavora_xlsx::CellValue::String(s) => ws
+            .write(row, col, s.as_str())
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        zavora_xlsx::CellValue::Number(n) => ws
+            .write(row, col, *n)
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        zavora_xlsx::CellValue::Bool(b) => ws
+            .write(row, col, *b)
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        zavora_xlsx::CellValue::DateTime(dt) => ws
+            .write(row, col, *dt)
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        zavora_xlsx::CellValue::Formula { formula, .. } => ws
+            .write_formula(row, col, formula)
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        zavora_xlsx::CellValue::RichText(rt) => ws
+            .write(row, col, rt.plain_text().as_str())
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
         zavora_xlsx::CellValue::Error(_) => Ok(()),
     }
 }
@@ -91,8 +95,8 @@ pub fn sort_range(
         Some(i) => i,
         None => return Ok(sheet_err(&input.sheet_name)),
     };
-    let (r1, c1, r2, c2) = zavora_xlsx::utility::parse_range_ref(&input.range)
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let (r1, c1, r2, c2) =
+        zavora_xlsx::utility::parse_range_ref(&input.range).map_err(|e| anyhow::anyhow!("{e}"))?;
 
     // Validate sort keys
     let mut key_cols: Vec<(u16, bool)> = Vec::new(); // (col_index_within_range, ascending)
@@ -109,10 +113,10 @@ pub fn sort_range(
                 "Use a column letter within the specified range.",
             ));
         }
-        let ascending = match &sk.direction {
-            Some(crate::types::enums::SortDirection::Descending) => false,
-            _ => true,
-        };
+        let ascending = !matches!(
+            &sk.direction,
+            Some(crate::types::enums::SortDirection::Descending)
+        );
         key_cols.push((col, ascending));
     }
 
@@ -229,12 +233,16 @@ pub fn find_replace(
 
     // Determine search range
     let (r1, c1, r2, c2) = if let Some(ref range_str) = input.range {
-        zavora_xlsx::utility::parse_range_ref(range_str)
-            .map_err(|e| anyhow::anyhow!("{e}"))?
+        zavora_xlsx::utility::parse_range_ref(range_str).map_err(|e| anyhow::anyhow!("{e}"))?
     } else {
         match ws.used_range() {
             Some(r) => r,
-            None => return Ok(success("Find/replace complete", FindReplaceResult { replacements: 0 })),
+            None => {
+                return Ok(success(
+                    "Find/replace complete",
+                    FindReplaceResult { replacements: 0 },
+                ));
+            }
         }
     };
 
@@ -273,7 +281,10 @@ pub fn find_replace(
             let count = if input.match_case {
                 display.matches(&input.find).count()
             } else {
-                display.to_lowercase().matches(&input.find.to_lowercase()).count()
+                display
+                    .to_lowercase()
+                    .matches(&input.find.to_lowercase())
+                    .count()
             };
             replacements += count;
 
@@ -328,8 +339,12 @@ pub fn fill_series(
         .worksheet(idx)
         .map_err(|e| anyhow::anyhow!("{e}"))?;
 
-    let fill_type = input.fill_type.unwrap_or(crate::types::enums::FillType::Linear);
-    let direction = input.direction.unwrap_or(crate::types::enums::FillDirection::Down);
+    let fill_type = input
+        .fill_type
+        .unwrap_or(crate::types::enums::FillType::Linear);
+    let direction = input
+        .direction
+        .unwrap_or(crate::types::enums::FillDirection::Down);
 
     // Read seed values
     let seeds: Vec<zavora_xlsx::CellValue> = match direction {
@@ -346,10 +361,7 @@ pub fn fill_series(
     match fill_type {
         crate::types::enums::FillType::Linear => {
             // Extract numeric seeds
-            let nums: Vec<f64> = seeds
-                .iter()
-                .filter_map(|v| cell_as_number(v))
-                .collect();
+            let nums: Vec<f64> = seeds.iter().filter_map(cell_as_number).collect();
             if nums.len() >= 2 {
                 let step = nums[nums.len() - 1] - nums[nums.len() - 2];
                 let last = nums[nums.len() - 1];
@@ -384,15 +396,10 @@ pub fn fill_series(
         }
         crate::types::enums::FillType::Date => {
             // Try to detect date seeds and interval
-            let date_strs: Vec<String> = seeds
-                .iter()
-                .map(|v| cell_display_value(v))
-                .collect();
+            let date_strs: Vec<String> = seeds.iter().map(cell_display_value).collect();
             // Simple date handling: try to parse as yyyy-mm-dd and detect day interval
-            let dates: Vec<Option<(i32, u32, u32)>> = date_strs
-                .iter()
-                .map(|s| parse_simple_date(s))
-                .collect();
+            let dates: Vec<Option<(i32, u32, u32)>> =
+                date_strs.iter().map(|s| parse_simple_date(s)).collect();
             let valid_dates: Vec<(i32, u32, u32)> = dates.iter().filter_map(|d| *d).collect();
             if valid_dates.len() >= 2 {
                 let last = valid_dates[valid_dates.len() - 1];
@@ -448,7 +455,7 @@ fn parse_simple_date(s: &str) -> Option<(i32, u32, u32)> {
     let y = parts[0].parse::<i32>().ok()?;
     let m = parts[1].parse::<u32>().ok()?;
     let d = parts[2].parse::<u32>().ok()?;
-    if m < 1 || m > 12 || d < 1 || d > 31 {
+    if !(1..=12).contains(&m) || !(1..=31).contains(&d) {
         return None;
     }
     Some((y, m, d))
@@ -486,7 +493,6 @@ fn add_days(date: (i32, u32, u32), days: i32) -> (i32, u32, u32) {
     days_to_date(jdn)
 }
 
-
 // ── delete_rows_where ──────────────────────────────────────────────
 
 pub fn delete_rows_where(
@@ -512,7 +518,12 @@ pub fn delete_rows_where(
 
     let (r1, _c1, r2, _c2) = match ws.used_range() {
         Some(r) => r,
-        None => return Ok(success("No rows to delete", DeleteRowsResult { rows_deleted: 0 })),
+        None => {
+            return Ok(success(
+                "No rows to delete",
+                DeleteRowsResult { rows_deleted: 0 },
+            ));
+        }
     };
 
     let start_row = if input.has_header { r1 + 1 } else { r1 };
@@ -668,8 +679,7 @@ pub fn transpose_range(
 
     // Determine destination
     let (dest_r, dest_c) = if let Some(ref dest) = input.destination_cell {
-        zavora_xlsx::utility::parse_cell_ref(dest)
-            .map_err(|e| anyhow::anyhow!("{e}"))?
+        zavora_xlsx::utility::parse_cell_ref(dest).map_err(|e| anyhow::anyhow!("{e}"))?
     } else {
         (r1, c1)
     };
@@ -716,8 +726,8 @@ pub fn remove_duplicates(
         Some(i) => i,
         None => return Ok(sheet_err(&input.sheet_name)),
     };
-    let (r1, c1, r2, c2) = zavora_xlsx::utility::parse_range_ref(&input.range)
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let (r1, c1, r2, c2) =
+        zavora_xlsx::utility::parse_range_ref(&input.range).map_err(|e| anyhow::anyhow!("{e}"))?;
 
     // Determine which columns to compare
     let compare_cols: Vec<u16> = if input.columns.is_empty() {
@@ -759,10 +769,7 @@ pub fn remove_duplicates(
             .iter()
             .map(|&c| {
                 let ci = (c - c1) as usize;
-                row_data
-                    .get(ci)
-                    .map(|v| cell_display_value(v))
-                    .unwrap_or_default()
+                row_data.get(ci).map(cell_display_value).unwrap_or_default()
             })
             .collect::<Vec<_>>()
             .join("\x00");
@@ -804,8 +811,8 @@ pub fn split_column(
         Some(i) => i,
         None => return Ok(sheet_err(&input.sheet_name)),
     };
-    let col = zavora_xlsx::utility::col_from_letter(&input.column)
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let col =
+        zavora_xlsx::utility::col_from_letter(&input.column).map_err(|e| anyhow::anyhow!("{e}"))?;
 
     let ws = entry
         .data
@@ -815,7 +822,11 @@ pub fn split_column(
     // Convert 1-based to 0-based
     let start_row = input.start_row.saturating_sub(1);
     let end_row = input.end_row.saturating_sub(1);
-    let data_start = if input.has_header { start_row + 1 } else { start_row };
+    let data_start = if input.has_header {
+        start_row + 1
+    } else {
+        start_row
+    };
 
     let mut max_parts = 0usize;
     let mut rows_split = 0usize;
@@ -857,7 +868,6 @@ pub fn split_column(
         },
     ))
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -907,7 +917,10 @@ mod tests {
             workbook_id: id.clone(),
             sheet_name: "Sheet1".into(),
             range: "A1:A3".into(),
-            sort_keys: vec![SortKey { column: "A".into(), direction: None }],
+            sort_keys: vec![SortKey {
+                column: "A".into(),
+                direction: None,
+            }],
             has_header: false,
         };
         let result = sort_range(&mut store, input).unwrap();
@@ -920,16 +933,24 @@ mod tests {
     #[test]
     fn test_sort_multi_key() {
         let (mut store, id) = setup();
-        write_data(&mut store, &id, &[
-            &["B", "2"], &["A", "3"], &["A", "1"], &["B", "1"],
-        ]);
+        write_data(
+            &mut store,
+            &id,
+            &[&["B", "2"], &["A", "3"], &["A", "1"], &["B", "1"]],
+        );
         let input = SortRangeInput {
             workbook_id: id.clone(),
             sheet_name: "Sheet1".into(),
             range: "A1:B4".into(),
             sort_keys: vec![
-                SortKey { column: "A".into(), direction: None },
-                SortKey { column: "B".into(), direction: None },
+                SortKey {
+                    column: "A".into(),
+                    direction: None,
+                },
+                SortKey {
+                    column: "B".into(),
+                    direction: None,
+                },
             ],
             has_header: false,
         };
@@ -946,12 +967,19 @@ mod tests {
     #[test]
     fn test_sort_with_header() {
         let (mut store, id) = setup();
-        write_data(&mut store, &id, &[&["Name"], &["Charlie"], &["Alice"], &["Bob"]]);
+        write_data(
+            &mut store,
+            &id,
+            &[&["Name"], &["Charlie"], &["Alice"], &["Bob"]],
+        );
         let input = SortRangeInput {
             workbook_id: id.clone(),
             sheet_name: "Sheet1".into(),
             range: "A1:A4".into(),
-            sort_keys: vec![SortKey { column: "A".into(), direction: None }],
+            sort_keys: vec![SortKey {
+                column: "A".into(),
+                direction: None,
+            }],
             has_header: true,
         };
         let result = sort_range(&mut store, input).unwrap();
@@ -970,7 +998,10 @@ mod tests {
             workbook_id: id.clone(),
             sheet_name: "Sheet1".into(),
             range: "A1:A2".into(),
-            sort_keys: vec![SortKey { column: "C".into(), direction: None }],
+            sort_keys: vec![SortKey {
+                column: "C".into(),
+                direction: None,
+            }],
             has_header: false,
         };
         let result = sort_range(&mut store, input).unwrap();
@@ -1078,7 +1109,11 @@ mod tests {
     #[test]
     fn test_fill_series_date() {
         let (mut store, id) = setup();
-        write_data(&mut store, &id, &[&["2024-01-01"], &["2024-01-02"], &["2024-01-03"]]);
+        write_data(
+            &mut store,
+            &id,
+            &[&["2024-01-01"], &["2024-01-02"], &["2024-01-03"]],
+        );
         let input = FillSeriesInput {
             workbook_id: id.clone(),
             sheet_name: "Sheet1".into(),
@@ -1115,7 +1150,11 @@ mod tests {
 
         // Test contains
         let (mut store, id) = setup();
-        write_data(&mut store, &id, &[&["hello world"], &["goodbye"], &["hello"]]);
+        write_data(
+            &mut store,
+            &id,
+            &[&["hello world"], &["goodbye"], &["hello"]],
+        );
         let input = DeleteRowsWhereInput {
             workbook_id: id.clone(),
             sheet_name: "Sheet1".into(),
@@ -1165,7 +1204,11 @@ mod tests {
     #[test]
     fn test_delete_rows_with_header() {
         let (mut store, id) = setup();
-        write_data(&mut store, &id, &[&["Name"], &["Alice"], &["Bob"], &["Alice"]]);
+        write_data(
+            &mut store,
+            &id,
+            &[&["Name"], &["Alice"], &["Bob"], &["Alice"]],
+        );
         let input = DeleteRowsWhereInput {
             workbook_id: id.clone(),
             sheet_name: "Sheet1".into(),
@@ -1278,9 +1321,11 @@ mod tests {
     #[test]
     fn test_remove_duplicates_all_columns() {
         let (mut store, id) = setup();
-        write_data(&mut store, &id, &[
-            &["A", "1"], &["B", "2"], &["A", "1"], &["C", "3"],
-        ]);
+        write_data(
+            &mut store,
+            &id,
+            &[&["A", "1"], &["B", "2"], &["A", "1"], &["C", "3"]],
+        );
         let input = RemoveDuplicatesInput {
             workbook_id: id.clone(),
             sheet_name: "Sheet1".into(),
@@ -1296,9 +1341,7 @@ mod tests {
     #[test]
     fn test_remove_duplicates_specific_columns() {
         let (mut store, id) = setup();
-        write_data(&mut store, &id, &[
-            &["A", "1"], &["A", "2"], &["B", "1"],
-        ]);
+        write_data(&mut store, &id, &[&["A", "1"], &["A", "2"], &["B", "1"]]);
         let input = RemoveDuplicatesInput {
             workbook_id: id.clone(),
             sheet_name: "Sheet1".into(),
@@ -1314,9 +1357,11 @@ mod tests {
     #[test]
     fn test_remove_duplicates_with_header() {
         let (mut store, id) = setup();
-        write_data(&mut store, &id, &[
-            &["Name"], &["Alice"], &["Bob"], &["Alice"],
-        ]);
+        write_data(
+            &mut store,
+            &id,
+            &[&["Name"], &["Alice"], &["Bob"], &["Alice"]],
+        );
         let input = RemoveDuplicatesInput {
             workbook_id: id.clone(),
             sheet_name: "Sheet1".into(),
@@ -1406,7 +1451,12 @@ mod tests {
         assert!(result.contains("\"status\":\"success\""));
         // Verify data in copy
         let entry = store.get_mut(&id).unwrap();
-        let copy_idx = entry.data.sheet_names().iter().position(|n| *n == "Copy1").unwrap();
+        let copy_idx = entry
+            .data
+            .sheet_names()
+            .iter()
+            .position(|n| *n == "Copy1")
+            .unwrap();
         let ws = entry.data.worksheet(copy_idx).unwrap();
         match ws.read_cell(0, 0) {
             zavora_xlsx::CellValue::String(s) => assert_eq!(s, "hello"),
@@ -1842,12 +1892,12 @@ mod tests {
             // Verify double-transposed data matches original
             let entry = store.get_mut(&id).unwrap();
             let ws = entry.data.worksheet(0).unwrap();
-            for ri in 0..num_rows {
-                for ci in 0..num_cols {
+            for (ri, original_row) in original.iter().enumerate().take(num_rows) {
+                for (ci, expected) in original_row.iter().enumerate().take(num_cols) {
                     let val = cell_display_value(&ws.read_cell(40 - 1 + ri as u32, ci as u16));
-                    prop_assert_eq!(&val, &original[ri][ci],
+                    prop_assert_eq!(&val, expected,
                         "Mismatch at ({},{}): expected '{}', got '{}'",
-                        ri, ci, original[ri][ci], val);
+                        ri, ci, expected, val);
                 }
             }
         }

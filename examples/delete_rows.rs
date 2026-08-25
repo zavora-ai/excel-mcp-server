@@ -6,9 +6,7 @@ use excel_mcp_server::store::{WorkbookEntry, WorkbookStore};
 use excel_mcp_server::tools::data::delete_rows_where;
 use excel_mcp_server::tools::workbook::save_workbook;
 use excel_mcp_server::types::enums::ConditionOperator;
-use excel_mcp_server::types::inputs::{
-    DeleteRowsWhereInput, RowCondition, SaveWorkbookInput,
-};
+use excel_mcp_server::types::inputs::{DeleteRowsWhereInput, RowCondition, SaveWorkbookInput};
 use std::time::Instant;
 
 fn main() {

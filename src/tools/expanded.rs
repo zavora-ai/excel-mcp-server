@@ -2566,10 +2566,7 @@ pub fn save_workbook_advanced(
             .data
             .save_parallel(path)
             .map_err(|e| anyhow::anyhow!("{e}"))?,
-        _ => entry
-            .data
-            .save(path)
-            .map_err(|e| anyhow::anyhow!("{e}"))?,
+        _ => entry.data.save(path).map_err(|e| anyhow::anyhow!("{e}"))?,
     }
     Ok(success_no_data(&format!(
         "Workbook saved as {} to {}",
@@ -2823,7 +2820,6 @@ pub fn add_chart_sheet(
     )))
 }
 
-
 // ══════════════════════════════════════════════════════════════════
 // v0.2.1: Threaded comments, granular protection, custom properties
 // ══════════════════════════════════════════════════════════════════
@@ -2966,7 +2962,6 @@ pub fn set_custom_property(
     )))
 }
 
-
 // ══════════════════════════════════════════════════════════════════
 // v0.2.1 continued: remaining gap items
 // ══════════════════════════════════════════════════════════════════
@@ -2998,10 +2993,7 @@ pub fn read_cell_comment(
                 "text": text,
             }),
         )),
-        None => Ok(success_no_data(&format!(
-            "No comment at {}",
-            input.cell
-        ))),
+        None => Ok(success_no_data(&format!("No comment at {}", input.cell))),
     }
 }
 
@@ -3031,10 +3023,7 @@ pub fn read_cell_format(
                 "format": format!("{:?}", fmt),
             }),
         )),
-        None => Ok(success_no_data(&format!(
-            "No format at {}",
-            input.cell
-        ))),
+        None => Ok(success_no_data(&format!("No format at {}", input.cell))),
     }
 }
 

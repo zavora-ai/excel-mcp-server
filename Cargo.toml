@@ -1,6 +1,6 @@
 [package]
 name = "excel-mcp-server"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 authors = ["James Karanja Maina"]
 license = "Apache-2.0"
@@ -12,7 +12,7 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 rmcp = { version = "3.1.2", features = ["server", "transport-io", "transport-streamable-http-server", "macros"] }
-zavora-xlsx = "0.1.1"
+zavora-xlsx = { version = "0.1.2", path = "../../zavora-xlsx" }
 tokio = { version = "1", features = ["full"] }
 tokio-util = "0.7"
 axum = "0.8"
@@ -28,12 +28,4 @@ uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
 proptest = "1"
-
-# Development arrangement, not a release one.
-#
-# The published 0.1.1 silently discards a write to a cell that already had a value: the
-# parsed original clobbers the authored write when the sheet is serialised, so "change this
-# number" reported success and changed nothing. Fixed in the checkout beside this one; this
-# points at it until a version carrying the fix is released.
-[patch.crates-io]
-zavora-xlsx = { path = "../../zavora-xlsx" }
+rmcp = { version = "3.1.2", features = ["client", "transport-child-process"] }
